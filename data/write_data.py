@@ -20,8 +20,12 @@ file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/mas
 input_dict = {
     'file_name':file_name,
     'full_em_model_file_name':full_em_model_file_name,
+    'reporttype': 'pos',
+    'reportpoint': [int(el) for el in range(1)],
     'scalers_folder':scalers_folder,
-    'bit_pos':[(32,0)]
+    'bit_pos':[(32,0)],
+    'datatype': [('6kHz','83ft'),('12kHz','83ft'),('24kHz','83ft'),
+                               ('24kHz','43ft'),('48kHz','43ft'),('96kHz','43ft')]
     }
 
 sim = GeoSim(input_dict)
@@ -30,7 +34,7 @@ sim.l_prim = [0]
 sim.all_data_types = [('6kHz','83ft'),('12kHz','83ft'),('24kHz','83ft'),('24kHz','43ft'),('48kHz','43ft'),('96kHz','43ft')]
 datatype = 'UDAR'
 
-sim.setup_fwd_run({'test':'foo'})
+sim.setup_fwd_run(**{'test':'foo'})
 
 set_global_seed(123)  # fix seeds for reproducibility
 
