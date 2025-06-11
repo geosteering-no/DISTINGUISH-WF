@@ -4,13 +4,17 @@ import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 # warnings.filterwarnings("always")
-from pathOPTIM import pathfinder
-import numpy as np
-from write_data_var import new_data
+from pathoptim.pathOPTIM import pathfinder
+from pathoptim.DP import perform_dynamic_programming
+from GeoSim.sim import GeoSim
 from pipt.loop.assimilation import Assimilate
-from GAN import GanLog
-from input_output import read_config
 from pipt import pipt_init
+from input_output import read_config
+
+from write_data_var import new_data
+
+import numpy as np
+
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
@@ -18,7 +22,6 @@ from plot_for_app import earth
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 import matplotlib
-from DP import perform_dynamic_programming
 from copy import deepcopy as dp
 import time
 
@@ -71,7 +74,7 @@ def da(state, start_position):
           'datatype': [f'res{el}' for el in range(1, 14)],
           'parallel': 1}
 
-    sim = GanLog(kf)
+    sim = GeoSim(kf)
 
     kd, kf = read_config.read_txt('es.pipt')  # read the config file.
 
