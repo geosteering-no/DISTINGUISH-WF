@@ -1,0 +1,21 @@
+[project]
+name = "DISTINGUISH-WP"
+version = "1.0.0"
+description = "The open DISTINGUISH Workflow"
+authors = [{ name = "Kristian Fossum", email = "krfo@norceresearch.no" }]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "seaborn",
+    "PET-GAN-LOG @ git+https://github.com/geosteering-no/PET-GAN-LOG.git",
+    "PathOPTIM @ git+https://github.com/geosteering-no/DSUP.git",
+    "GAN-EM-model @ git+https://github.com/geosteering-no/GAN-EM-model.git",
+    "PET @ git+https://github.com/Python-Ensemble-Toolbox/PET.git" 
+]
+
+[project.scripts]
+run_WF = "run_WF:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
