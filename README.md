@@ -35,5 +35,6 @@ cd ../
 Run by typing in terminal:
 
 ```
+cd wf_demo
 run_WF
 ```
