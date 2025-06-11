@@ -1,5 +1,8 @@
 import numpy as np
 import warnings
+
+import torch
+
 # Suppress FutureWarnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
@@ -28,6 +31,11 @@ import time
 global_extent = [0, 640, -16.25, 15.75]
 norm = Normalize(vmin=0.0, vmax=1)
 
+weights_folder = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/em/{}.pth?ref_type=heads"
+scalers_folder = weights_folder
+full_em_model_file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/em/checkpoint_770.pth?ref_type=heads"
+file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/gan/netG_epoch_15000.pth"
+
 # build a streamlit app to run the workflow. On the first run of the app we will be in the initial state.
 # The user has to specify the start position of the well. Number of decissions are always 1, and the user have to specify
 # wheter to drill ahead, or to stop drilling. If the user decides to stop drilling, the app will stop. If the user decides to drill ahead, the main function will be called.
@@ -39,7 +47,7 @@ st.title('DISTIGUISH Workflow')
 
 # Show a slider first to select the start position of the well
 if st.session_state.first_position:
-    state = np.load('orig_prior_small.npz')['m']  # the prior latent vector
+    state = np.load('../orig_prior_small.npz')['x']  # the prior latent vector
     start_position = (st.slider(label='Enter the horizontal start position of the well', key='start_position',
                                 min_value=0, max_value=64, value=int(32)), 0)
     st.session_state['path'] = [start_position]
@@ -56,7 +64,12 @@ def toggle_first_step():
 # plot the current state
 @st.cache_data
 def get_gan_earth(state):
-    gan, true_facies = earth(state)
+    # make state into a tensor
+    true_facies = earth(torch.tensor(state,dtype=torch.float32))
+
+    weights = np.array([-0.1, 1, 0.5])
+    gan = np.mean(true_facies * weights.reshape(1, 3, 1,1),axis=1)  # Apply weights to the true facies
+
     return gan, true_facies
 
 @st.cache_data
@@ -65,18 +78,22 @@ def da(state, start_position):
 
     # start_position = (32, 0) # initial position of the well
     # state = np.load('orig_prior.npz')['m'] # the prior latent vector
-    np.savez('prior.npz', **{'m': state})  # save the prior as a file
+    np.savez('prior.npz', **{'x': state})  # save the prior as a file
 
     kf = {'bit_pos': [start_position],
           'vec_size': 60,
           'reporttype': 'pos',
           'reportpoint': [int(el) for el in range(1)],
-          'datatype': [f'res{el}' for el in range(1, 14)],
-          'parallel': 1}
+          'datatype': [('6kHz','83ft'),('12kHz','83ft'),('24kHz','83ft'),
+                       ('24kHz','43ft'),('48kHz','43ft'),('96kHz','43ft')],
+          'parallel': 8,
+          'file_name': file_name,
+          'full_em_model_file_name': full_em_model_file_name,
+         'scalers_folder': scalers_folder}
 
     sim = GeoSim(kf)
 
-    kd, kf = read_config.read_txt('es.pipt')  # read the config file.
+    kd, kf = read_config.read_txt('DA.pipt')  # read the config file.
 
     for i in range(num_decissions):
         # start by assimilating data at the current position
@@ -86,14 +103,16 @@ def da(state, start_position):
                   'vec_size': 60,
                   'reporttype': 'pos',
                   'reportpoint': [int(el) for el in range(1)],
-                  'datatype': [f'res{el}' for el in range(1, 14)]})
+                  'datatype': [('6kHz','83ft'),('12kHz','83ft'),('24kHz','83ft'),
+                               ('24kHz','43ft'),('48kHz','43ft'),('96kHz','43ft')]
+                  })
         # do inversion
         sim.update_bit_pos([start_position])
         analysis = pipt_init.init_da(kd, kf, sim)  # Re-initialize the data assimilation to read the new data
         assimilation = Assimilate(analysis)
         assimilation.run()
 
-        state = np.load('posterior_state_estimate.npz')['m']  # import the posterior state estimate
+        state = np.load('posterior_state_estimate.npz')['x']  # import the posterior state estimate
         return state
 
 gan, true_facies = get_gan_earth(state)
@@ -130,7 +149,7 @@ if st.checkbox('Show Human suggestion'):
 # ask the user to show all the DP paths
 if st.checkbox('Show Robot paths'):
     # calculate the robot paths
-    next_optimal, _ = pathfinder().run(state, start_position)
+    next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
     optimal_paths = [perform_dynamic_programming(gan[j, :, :], start_position,
                                                  cost_vector=pathfinder().get_cost_vector())[2] for j in
                      range(state.shape[1])]
@@ -144,7 +163,7 @@ if st.checkbox('Show Robot paths'):
             go.Scatter(x=path_cols, y=path_rows, mode='lines', line=dict(color='black'), showlegend=False))
 
 if st.checkbox('Show Robot suggestion'):
-    next_optimal, _ = pathfinder().run(state, start_position)
+    next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
     fig.add_scatter(x=[next_optimal[1]], y=[next_optimal[0]], mode='markers',
                     marker=dict(color='black', size=10, symbol='cross'),
                     name='Robot suggestion')

@@ -32,7 +32,7 @@ from pathoptim.DP import perform_dynamic_programming, evaluate_earth_model, crea
 # warnings.filterwarnings(action='ignore', category=FutureWarning)
 # warnings.filterwarnings(action='ignore', category=UserWarning)
 
-gan_file_name =
+gan_file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/gan/netG_epoch_15000.pth"
 gan_vec_size = 60
 gan_evaluator = GanEvaluator(gan_file_name, gan_vec_size)
 
@@ -48,17 +48,11 @@ def earth(state):
 
     saved_legend = False
 
-    gan_vec_size = 60
-    load_file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/gan/netG_epoch_15000.pth"
-    gan_evaluator = GanEvaluator(load_file_name, gan_vec_size)
-
     #true_resistivity_image = convert_facies_to_resistivity(true_earth_model_facies)
 
 
     # todo should we switch back to probability of sand ??? (use custom weights)
-    post_earth = np.array(
-        [create_weighted_image(earth_model_from_vector(gan_evaluator, state[:, el]), weights=[0., 1., 1.]) for el in
-         range(state.shape[1])])
+    post_earth = np.array([earth_model_from_vector(gan_evaluator, state[:, el]) for el in range(state.shape[1])])
 
     return post_earth
 

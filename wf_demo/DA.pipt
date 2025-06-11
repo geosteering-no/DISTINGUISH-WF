@@ -39,7 +39,7 @@ NE
 100
 
 TRUEDATA
-../data/data.pkl
+../data/data.csv
 
 TRUEDATAINDEX
 1
@@ -57,7 +57,7 @@ STATE
 X
 
 DATAVAR
-../data/var.pkl
+../data/var.csv
 #REL	2
 
 PRIOR_X

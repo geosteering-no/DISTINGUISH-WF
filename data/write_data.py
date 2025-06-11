@@ -1,9 +1,8 @@
 import numpy as np
 from GeoSim.sim import GeoSim
-import os
-os.sys.path.append('home/AD.NORCERESEARCH.NO/krfo/Prosjekter/DISTINGUISH/ENKFWS_2025/code/GAN-geosteering/gan_update') # assume that all packages are stored in a joint folder.
-from vector_to_log import FullModel
-from image_to_log import set_global_seed
+
+from NeuralSim.vector_to_log import FullModel
+from NeuralSim.image_to_log import set_global_seed
 import torch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 import matplotlib.pyplot as plt
@@ -33,6 +32,7 @@ datatype = 'UDAR'
 sim.setup_fwd_run({'test':'foo'})
 
 set_global_seed(123)  # fix seeds for reproducibility
+
 my_latent_vec_np = np.random.normal(size=60)
 my_latent_tensor = torch.tensor(my_latent_vec_np, dtype=torch.float32).unsqueeze(0).to(
     device)  # Add batch dimension and move to device
@@ -95,8 +95,8 @@ for count,di in enumerate(sim.all_data_types):
 
 df = pd.DataFrame(data,columns=sim.all_data_types,index=[0])
 df.index.name = 'tvd'
-#df.to_csv('data.csv',index=True)
-df.to_pickle('data.pkl')
+df.to_csv('data.csv',index=True)
+#df.to_pickle('data.pkl')
 
 df = pd.DataFrame(var,columns=sim.all_data_types,index=[0])
 df.index.name = 'tvd'
