@@ -86,7 +86,7 @@ def da(state, start_position):
           'reportpoint': [int(el) for el in range(1)],
           'datatype': [('6kHz','83ft'),('12kHz','83ft'),('24kHz','83ft'),
                        ('24kHz','43ft'),('48kHz','43ft'),('96kHz','43ft')],
-          'parallel': 8,
+          'parallel': 1,
           'file_name': file_name,
           'full_em_model_file_name': full_em_model_file_name,
          'scalers_folder': scalers_folder}
@@ -108,7 +108,7 @@ def da(state, start_position):
                   })
         # do inversion
         sim.update_bit_pos([start_position])
-        analysis = pipt_init.init_da(kd, kf, sim)  # Re-initialize the data assimilation to read the new data
+        analysis = pipt_init.init_da(kd, kd, sim)  # Re-initialize the data assimilation to read the new data
         assimilation = Assimilate(analysis)
         assimilation.run()
 

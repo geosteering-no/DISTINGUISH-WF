@@ -20,7 +20,8 @@ file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/mas
 input_dict = {
     'file_name':file_name,
     'full_em_model_file_name':full_em_model_file_name,
-    'scalers_folder':scalers_folder
+    'scalers_folder':scalers_folder,
+    'bit_pos':[(32,0)]
     }
 
 sim = GeoSim(input_dict)
@@ -60,7 +61,7 @@ fig, (ax_img, ax_res) = plt.subplots(
 num_cols = image.shape[3]
 # note, that the image is rotated weirdly in the current training
 image_np = image.cpu().detach().numpy()
-img = np.permute_dims(image_np[0, 0:3, :, :],(1, 2, 0))  # shape: [64, 64, 3]
+img = np.transpose(image_np[0, 0:3, :, :],(1, 2, 0))  # shape: [64, 64, 3]
 ax_img.imshow(img, #extent=(-0.5, num_cols - 0.5, pad_top, pad_top + image.shape[2]),
               aspect='auto', interpolation='none')
 ax_img.set_title("Facies image")
@@ -95,8 +96,8 @@ for count,di in enumerate(sim.all_data_types):
 
 df = pd.DataFrame(data,columns=sim.all_data_types,index=[0])
 df.index.name = 'tvd'
-df.to_csv('data.csv',index=True)
-#df.to_pickle('data.pkl')
+#df.to_csv('data.csv',index=True)
+df.to_pickle('data.pkl')
 
 df = pd.DataFrame(var,columns=sim.all_data_types,index=[0])
 df.index.name = 'tvd'
