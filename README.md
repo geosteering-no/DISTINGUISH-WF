@@ -27,8 +27,11 @@ pip install -e .
 
 ### Temporary workaround due to ongoing upgrade of dependencies
 
-1. Clone the WF repo: git@github.com:geosteering-no/DISTINGUISH-WF.git
-2. Clone a fork of PET (not the main one): 
+1. Clone the WF repo:
+```
+git clone git@github.com:geosteering-no/DISTINGUISH-WF.git
+```
+3. Clone a fork of PET (not the main one): 
 ```
 git clone git@github.com:KriFos1/PET.git
 ```
