@@ -1,4 +1,6 @@
 ## Installation
+
+**Currently, some dependencies are being updated to enhance performance. Follow the Temporary workaround for installation**
 1. Install in a virtual environment (verified with python 3.11)
 ```
 python -m venv .venv
