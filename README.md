@@ -33,17 +33,22 @@ git clone git@github.com:geosteering-no/DISTINGUISH-WF.git
 ```
 3. Clone a fork of PET (not the main one): 
 ```
-git clone git@github.com:KriFos1/PET.git
+git clone git@github.com:KriFos1/PET.git kriPET
 ```
 3. Change branch to `pipt-structure`
-4. Follow the normal steps:
-5. Make a virtual environment and install the two packages by standard "pip install -e ."
-6. Go to `DISTINGUISH_WD/data`
-7. Run
+Now the custom PET is in kriPET folder. Let's assume one above the main code.
+5. Follow the normal steps:
+6. Make a virtual environment and install the two packages by standard "pip install -e ."
+7. Install the custom PET, e.g.
+```
+pip install -e ../kriPET
+```
+9. Go to `DISTINGUISH_WD/data`
+10. Run
 ```
 python write_data.py
 ```
-8. Go to `DISTINGUISH_WD/wf_demo`
+10. Go to `DISTINGUISH_WD/wf_demo`
 Run by writing:
 ```
 run_WF
