@@ -37,6 +37,7 @@ datatype = 'UDAR'
 sim.setup_fwd_run(**{'test':'foo'})
 
 set_global_seed(123)  # fix seeds for reproducibility
+# set_global_seed(0)
 
 my_latent_vec_np = np.random.normal(size=60)
 my_latent_tensor = torch.tensor(my_latent_vec_np, dtype=torch.float32).unsqueeze(0).to(
@@ -54,31 +55,87 @@ image, resistivity, logs = sim.NNmodel.forward(my_latent_tensor, index_vector, o
 logs_np = logs.cpu().detach().numpy()[0,:,-8:]
 
 # the images are upside down, so we need to flip them
-#image = image.flip([2])
-#resistivity = resistivity.flip([2])
+# image = image.flip([2])
+# resistivity = resistivity.flip([2])
+# TODO flip is at least required for consistency of the Synth truth images
 
-fig, (ax_img, ax_res) = plt.subplots(
-    2, 1, figsize=(10, 8), sharex=True, height_ratios=[1, 2]
+# fig, (ax_img, ax_res) = plt.subplots(
+#     2, 1, figsize=(10, 8), sharex=True, height_ratios=[1, 2]
+# )
+#
+# # plotting the image
+# num_cols = image.shape[3]
+# # note, that the image is rotated weirdly in the current training
+# image_np = image.cpu().detach().numpy()
+# img = np.transpose(image_np[0, 0:3, :, :],(1, 2, 0))  # shape: [64, 64, 3]
+# ax_img.imshow(img, #extent=(-0.5, num_cols - 0.5, pad_top, pad_top + image.shape[2]),
+#               aspect='auto', interpolation='none')
+# ax_img.set_title("Facies image")
+# #ax_img.set_ylim(pad_top + image.shape[2], pad_top)
+#
+# # plotting resistivity
+# resistivity_np = resistivity.cpu().detach().numpy()
+# img_res = resistivity_np[:, 0, :].T  # shape: [H, W]
+# ax_res.imshow(img_res, extent=(-0.5, num_cols - 0.5, 0, resistivity.shape[2]),
+#               aspect='auto', interpolation='none', cmap='summer')
+# ax_res.set_title("Resistivity input")
+#
+# fig.savefig("Synth_Truth.png")
+
+names = [
+    # 'real(xx)', 'img(xx)',
+    # 'real(yy)', 'img(yy)',
+    # 'real(zz)', 'img(zz)',
+    # 'real(xz)', 'img(xz)',
+    # 'real(zx)', 'img(zx)',
+    'USDA', 'USDP',
+    'UADA', 'UADP',
+    'UHRA', 'UHRP',
+    'UHAA', 'UHAP'
+]
+tool_configs = [f'{f} khz - {s} ft' for f, s in zip([6., 12., 24., 24., 48., 96.], [83., 83., 83., 43., 43., 43.])]
+
+i = 0
+
+fig, (ax_img, ax_res, ax_logs) = plt.subplots(
+    3, 1, figsize=(10, 8), sharex=True, height_ratios=[1, 2, 1]
 )
 
+pad_top = sim.NNmodel.pad_top
 # plotting the image
 num_cols = image.shape[3]
 # note, that the image is rotated weirdly in the current training
-image_np = image.cpu().detach().numpy()
-img = np.transpose(image_np[0, 0:3, :, :],(1, 2, 0))  # shape: [64, 64, 3]
-ax_img.imshow(img, #extent=(-0.5, num_cols - 0.5, pad_top, pad_top + image.shape[2]),
+img = image[0, 0:3, :, :].permute(1, 2, 0).cpu().numpy()  # shape: [64, 64, 3]
+ax_img.imshow(img, extent=(-0.5, num_cols - 0.5, pad_top, pad_top + image.shape[2]),
               aspect='auto', interpolation='none')
 ax_img.set_title("Facies image")
-#ax_img.set_ylim(pad_top + image.shape[2], pad_top)
+ax_img.set_ylim(pad_top + image.shape[2], pad_top)
 
+num_cols_res = resistivity.shape[0]
 # plotting resistivity
-resistivity_np = resistivity.cpu().detach().numpy()
-img_res = resistivity_np[:, 0, :].T  # shape: [H, W]
-ax_res.imshow(img_res, extent=(-0.5, num_cols - 0.5, 0, resistivity.shape[2]),
+img_res = resistivity[:, 0, :].T.cpu().numpy()  # shape: [H, W]
+ax_res.imshow(img_res, extent=(-0.5, num_cols_res - 0.5, 0, resistivity.shape[2]),
               aspect='auto', interpolation='none', cmap='summer')
 ax_res.set_title("Resistivity input")
 
-fig.savefig("Synth_Truth.png")
+# plotting logging locations
+mask = resistivity[:, 2, :].T.cpu().numpy()  # shape: [H, W]
+rgba = np.zeros((mask.shape[0], mask.shape[1], 4), dtype=np.float32)
+rgba[..., 0:3] = 0.0  # black color
+rgba[..., 3] = (mask != 0).astype(np.float32)  # alpha: 1 for non-zero, 0 for zero
+
+ax_res.imshow(rgba, extent=(-0.5, num_cols - 0.5, 0, resistivity.shape[2]),
+              aspect='auto', interpolation='none')
+ax_res.set_ylim(resistivity.shape[2], 0)
+#
+# # plotting the logs
+# ax_logs.set_title(names[i])
+# logs_to_plot = logs_np[:, i]  # take the first batch and first channel
+# for j, config in enumerate(tool_configs):
+#     ax_logs.plot(logs_to_plot[:, j], label=config)
+
+# saving
+fig.savefig(f'SynthTruth_updated.png', bbox_inches='tight', dpi=300)
 
 k = open('assim_index.csv','w',newline='')
 #writer4 = csv.writer(k)
