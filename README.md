@@ -43,16 +43,6 @@ Now the custom PET is in kriPET folder. Let's assume one above the main code.
 ```
 pip install -e ../kriPET
 ```
-9. Go to `DISTINGUISH_WD/data`
-10. Run
-```
-python write_data.py
-```
-10. Go to `DISTINGUISH_WD/wf_demo`
-Run by writing:
-```
-run_WF
-```
 
 ## Running
 Make some initial data by
