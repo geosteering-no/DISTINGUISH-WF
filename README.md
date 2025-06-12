@@ -23,6 +23,27 @@ Install PET:
 pip install -e .
 ```
 
+### Temporary workaround due to ongoing upgrade of dependencies
+
+1. Clone the WF repo: git@github.com:geosteering-no/DISTINGUISH-WF.git
+2. Clone a fork of PET (not the main one): 
+```
+git clone git@github.com:KriFos1/PET.git
+```
+3. Change branch to `pipt-structure`
+4. Follow the normal steps:
+5. Make a virtual environment and install the two packages by standard "pip install -e ."
+6. Go to `DISTINGUISH_WD/data`
+7. Run
+```
+python write_data.py
+```
+8. Go to `DISTINGUISH_WD/wf_demo`
+Run by writing:
+```
+run_WF
+```
+
 ## Running
 Make some initial data by
 
