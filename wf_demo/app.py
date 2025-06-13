@@ -169,24 +169,24 @@ if st.checkbox('Show Robot suggestion'):
                     marker=dict(color='black', size=10, symbol='cross'),
                     name='Robot suggestion')
 
-if st.checkbox('Cheat!'):
-    x = np.array(range(64))
-    y = np.array(range(64))
-    X, Y = np.meshgrid(x, y)
-    Z = true_facies[0, :, :]
-    fig.add_trace(go.Contour(z=Z, x=x, y=y, contours=dict(
-        start=-1,
-        end=1,
-        size=1.9,
-        coloring='none'
-    ),
-                             line=dict(
-                                 width=2,
-                                 color='white',
-                                 dash='dash'
-                             ),
-                             showscale=False  # Hide the color scale for the contour
-                             ))
+# if st.checkbox('Cheat!'):
+#     x = np.array(range(64))
+#     y = np.array(range(64))
+#     X, Y = np.meshgrid(x, y)
+#     Z = true_facies[0, :, :]
+#     fig.add_trace(go.Contour(z=Z, x=x, y=y, contours=dict(
+#         start=-1,
+#         end=1,
+#         size=1.9,
+#         coloring='none'
+#     ),
+#                              line=dict(
+#                                  width=2,
+#                                  color='white',
+#                                  dash='dash'
+#                              ),
+#                              showscale=False  # Hide the color scale for the contour
+#                              ))
 
 path_rows, path_cols = zip(*(st.session_state['path']))
 fig.add_trace(go.Scatter(x=path_cols, y=path_rows, mode='lines',
