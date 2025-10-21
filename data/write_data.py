@@ -37,10 +37,15 @@ datatype = 'UDAR'
 
 sim.setup_fwd_run(**{'test':'foo'})
 
-set_global_seed(123)  # fix seeds for reproducibility
-# set_global_seed(0)
+set_global_seed(42)  # fix seeds for reproducibility
+set_global_seed(43)  # fix seeds for reproducibility
+set_global_seed(55)  # fix seeds for reproducibility
+
+set_global_seed(55)  # fix seeds for reproducibility
+# TODO this is another seed than in the app
 
 my_latent_vec_np = np.random.normal(size=60)
+# my_latent_vec_np = np.random.uniform(low=0.1, high=0.2, size=60)
 my_latent_tensor = torch.tensor(my_latent_vec_np, dtype=torch.float32).unsqueeze(0).to(
     device)  # Add batch dimension and move to device
 index_vector = torch.full((1, 10), fill_value=32, dtype=torch.long).to(device)
@@ -104,7 +109,7 @@ fig = plt.figure(figsize=(10, 8))
 
 # Create a grid with 3 rows and 2 columns
 # The second column is narrow for the colorbar
-gs = GridSpec(3, 2, width_ratios=[20, 1], height_ratios=[1, 2, 1], figure=fig)
+gs = GridSpec(3, 2, width_ratios=[20, 1], height_ratios=[1, 2, 1.2], figure=fig)
 
 # Left column: main plots
 ax_img = fig.add_subplot(gs[0, 0])
@@ -121,7 +126,8 @@ pad_top = sim.NNmodel.pad_top
 num_cols = image.shape[3]
 # note, that the image is rotated weirdly in the current training
 img = image[0, 0:3, :, :].permute(1, 2, 0).cpu().numpy()  # shape: [64, 64, 3]
-ax_img.imshow(img, extent=(-0.5, num_cols - 0.5, pad_top, pad_top + image.shape[2]),
+ax_img.imshow(img,
+              extent=(-0.5, num_cols - 0.5, pad_top + image.shape[2], pad_top),
               aspect='auto', interpolation='none')
 ax_img.set_title("Facies image")
 ax_img.set_ylim(pad_top + image.shape[2], pad_top)
@@ -129,7 +135,7 @@ ax_img.set_ylim(pad_top + image.shape[2], pad_top)
 num_cols_res = resistivity.shape[0]
 # plotting resistivity
 img_res = resistivity[:, 0, :].T.cpu().numpy()  # shape: [H, W]
-ax_res.imshow(img_res, extent=(-0.5, num_cols_res - 0.5, 0, resistivity.shape[2]),
+ax_res.imshow(img_res, extent=(-0.5, num_cols_res - 0.5, resistivity.shape[2], 0),
               aspect='auto', interpolation='none', cmap='summer')
 ax_res.set_title("Resistivity input")
 
@@ -139,10 +145,10 @@ rgba = np.zeros((mask.shape[0], mask.shape[1], 4), dtype=np.float32)
 rgba[..., 0:3] = 0.0  # black color
 rgba[..., 3] = (mask != 0).astype(np.float32)  # alpha: 1 for non-zero, 0 for zero
 
-im_res = ax_res.imshow(rgba, extent=(-0.5, num_cols - 0.5, 0, resistivity.shape[2]),
+im_res = ax_res.imshow(rgba, extent=(-0.5, num_cols - 0.5, resistivity.shape[2], 0),
               aspect='auto', interpolation='none')
 ax_res.set_ylim(resistivity.shape[2], 0)
-ax_res.tick_params(labelbottom=True)
+# ax_res.tick_params(labelbottom=True)
 
 # add colorbar
 cbar = fig.colorbar(im_res, cax=ax_res_cbar)
@@ -160,6 +166,10 @@ for j, config in enumerate(tool_configs):
     ax_logs.plot(logs_np[:, j, log_tool_index_in_use], label=config)
 
 ax_logs.legend()
+
+# remove visible labels on axes
+ax_img.tick_params(labelbottom=False)
+ax_res.tick_params(labelbottom=False)
 
 # saving
 fig.savefig(f'SynthTruth_updated.png', bbox_inches='tight', dpi=300)
