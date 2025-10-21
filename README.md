@@ -20,9 +20,10 @@ git checkout -b pipt-structure origin/pipt-structure
 Now the custom PET is in kriPET folder. Let's assume one above the main code.
 ### Continue installation normally
 
-4. Install the custom PET in the DISTINGUISH-WF folder, e.g.
+4. Install the custom PET in the DISTINGUISH-WF folder (activating the venv if not already), e.g.
 ```
 cd ../DISTINGUISH-WF
+source .venv/bin/activate
 ```
 ```
 pip install -e ../kriPET
