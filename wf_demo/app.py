@@ -38,13 +38,16 @@ file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/mas
 
 # build a streamlit app to run the workflow. On the first run of the app we will be in the initial state.
 # The user has to specify the start position of the well. Number of decissions are always 1, and the user have to specify
-# wheter to drill ahead, or to stop drilling. If the user decides to stop drilling, the app will stop. If the user decides to drill ahead, the main function will be called.
+# whether to drill ahead, or to stop drilling. If the user decides to stop drilling, the app will stop.
+# If the user decides to drill ahead, the main function will be called.
 
 if 'first_position' not in st.session_state:
     st.session_state['first_position'] = True
 # Also, plot the current state as a main feature of the app.
 st.title('Distinguish Open Workflow (GMT)')
 # GMT refers to Generic Modern [UDAR] Tool
+
+next_optimal = None
 
 # Show a slider first to select the start position of the well
 if st.session_state.first_position:
@@ -135,22 +138,35 @@ fig.add_scatter(x=[start_position[1]], y=[start_position[0]], mode='markers', ma
 
 st.write(f'The current position of the well is at: {start_position}')
 
-if st.checkbox('Show Human suggestion'):
-    user_step_select = st.radio('What is the next step?', ['Drill up', 'Drill ahead', 'Drill down'])
-    if user_step_select == 'Drill up':
+
+def apply_user_input(user_choice: str = None):
+    if user_choice == 'Drill up':
         next_position = (start_position[0] - 1, start_position[1] + 1)
-    elif user_step_select == 'Drill ahead':
+    elif user_choice == 'Drill ahead':
         next_position = (start_position[0], start_position[1] + 1)
     else:
         next_position = (start_position[0] + 1, start_position[1] + 1)
+    return next_position
 
+
+if st.checkbox('Show Human suggestion'):
+    user_step_select = st.radio('What is the next step?', ['Drill up', 'Drill ahead', 'Drill down'])
+    next_position = apply_user_input(user_step_select)
     fig.add_scatter(x=[next_position[1]], y=[next_position[0]], mode='markers',
                     marker=dict(color='blue', size=10), name='Next Position')
+
+
+
+def compute_and_apply_robot_suggestion():
+    next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
+    return next_optimal
+
 
 # ask the user to show all the DP paths
 if st.checkbox('Show Robot paths'):
     # calculate the robot paths
-    next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
+    # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
+    next_optimal = compute_and_apply_robot_suggestion()
     optimal_paths = [perform_dynamic_programming(gan[j, :, :], start_position,
                                                  cost_vector=pathfinder().get_cost_vector())[2] for j in
                      range(state.shape[1])]
@@ -164,7 +180,8 @@ if st.checkbox('Show Robot paths'):
             go.Scatter(x=path_cols, y=path_rows, mode='lines', line=dict(color='black'), showlegend=False))
 
 if st.checkbox('Show Robot suggestion'):
-    next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
+    # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
+    next_optimal = compute_and_apply_robot_suggestion()
     fig.add_scatter(x=[next_optimal[1]], y=[next_optimal[0]], mode='markers',
                     marker=dict(color='black', size=10, symbol='cross'),
                     name='Robot suggestion')
@@ -197,12 +214,15 @@ st.plotly_chart(fig, use_container_width=True)
 col1, col2 = st.columns(2)
 with col1:
     if st.button('Drill like a Human'):
+        next_position = apply_user_input()
         st.session_state.start_position_state = next_position
         state = da(state, next_position)
         st.session_state.state = state
         toggle_first_step()
 with col2:
     if st.button('Drill like a Robot'):
+        if next_optimal is None:
+            next_optimal = compute_and_apply_robot_suggestion()
         st.session_state.start_position_state = next_optimal
         state = da(state, next_optimal)
         st.session_state.state = state
