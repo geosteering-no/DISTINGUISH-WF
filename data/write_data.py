@@ -6,6 +6,7 @@ from NeuralSim.image_to_log import set_global_seed
 import torch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 import matplotlib.pyplot as plt
+from matplotlib.pyplot import GridSpec
 import pandas as pd
 import pickle
 import csv
@@ -52,7 +53,7 @@ image, resistivity, logs = sim.NNmodel.forward(my_latent_tensor, index_vector, o
 #             'UHAA', 'UHAP'
 #         ]
 
-logs_np = logs.cpu().detach().numpy()[0,:,-8:]
+logs_np = logs.cpu().detach().numpy()[:,:,-8:]
 
 # the images are upside down, so we need to flip them
 # image = image.flip([2])
@@ -95,11 +96,25 @@ names = [
 ]
 tool_configs = [f'{f} khz - {s} ft' for f, s in zip([6., 12., 24., 24., 48., 96.], [83., 83., 83., 43., 43., 43.])]
 
-i = 0
+log_tool_index_in_use = 0
 
-fig, (ax_img, ax_res, ax_logs) = plt.subplots(
-    3, 1, figsize=(10, 8), sharex=True, height_ratios=[1, 2, 1]
-)
+
+
+fig = plt.figure(figsize=(10, 8))
+
+# Create a grid with 3 rows and 2 columns
+# The second column is narrow for the colorbar
+gs = GridSpec(3, 2, width_ratios=[20, 1], height_ratios=[1, 2, 1], figure=fig)
+
+# Left column: main plots
+ax_img = fig.add_subplot(gs[0, 0])
+ax_res = fig.add_subplot(gs[1, 0], sharex=ax_img)
+ax_logs = fig.add_subplot(gs[2, 0], sharex=ax_img)
+
+# Right column: color-bars
+ax_img_cbar = fig.add_subplot(gs[0, 1])
+ax_res_cbar = fig.add_subplot(gs[1, 1])
+ax_logs_cbar = fig.add_subplot(gs[2, 1])
 
 pad_top = sim.NNmodel.pad_top
 # plotting the image
@@ -124,15 +139,27 @@ rgba = np.zeros((mask.shape[0], mask.shape[1], 4), dtype=np.float32)
 rgba[..., 0:3] = 0.0  # black color
 rgba[..., 3] = (mask != 0).astype(np.float32)  # alpha: 1 for non-zero, 0 for zero
 
-ax_res.imshow(rgba, extent=(-0.5, num_cols - 0.5, 0, resistivity.shape[2]),
+im_res = ax_res.imshow(rgba, extent=(-0.5, num_cols - 0.5, 0, resistivity.shape[2]),
               aspect='auto', interpolation='none')
 ax_res.set_ylim(resistivity.shape[2], 0)
+ax_res.tick_params(labelbottom=True)
+
+# add colorbar
+cbar = fig.colorbar(im_res, cax=ax_res_cbar)
+cbar.set_label("Resistivity (Ω·m)")
+
+# Hide unused colorbar axes if desired
+ax_img_cbar.axis('off')
+ax_logs_cbar.axis('off')
+
 #
-# # plotting the logs
-# ax_logs.set_title(names[i])
+# plotting the logs
+ax_logs.set_title(names[log_tool_index_in_use])
 # logs_to_plot = logs_np[:, i]  # take the first batch and first channel
-# for j, config in enumerate(tool_configs):
-#     ax_logs.plot(logs_to_plot[:, j], label=config)
+for j, config in enumerate(tool_configs):
+    ax_logs.plot(logs_np[:, j, log_tool_index_in_use], label=config)
+
+ax_logs.legend()
 
 # saving
 fig.savefig(f'SynthTruth_updated.png', bbox_inches='tight', dpi=300)
