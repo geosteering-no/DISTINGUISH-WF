@@ -13,6 +13,10 @@ pip install -e .
 git clone git@github.com:KriFos1/PET.git kriPET
 ```
 3. Change branch to `pipt-structure`
+```
+git checkout -b pipt-structure origin/pipt-structure
+```
+
 Now the custom PET is in kriPET folder. Let's assume one above the main code.
 ### Continue installation normally
 
