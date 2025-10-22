@@ -215,3 +215,15 @@ wf_demo/prior_forecast.npz
 wf_demo/posterior_state_estimate.npz
 
 wf_demo/posterior_forecast.npz
+
+batch_run/obs_var.npz
+
+batch_run/posterior_forecast.npz
+
+batch_run/posterior_state_estimate.npz
+
+batch_run/prior.npz
+
+batch_run/why_iter_loop_stopped.p
+
+batch_run/prior_forecast.npz
