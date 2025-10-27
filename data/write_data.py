@@ -16,17 +16,18 @@ import csv
 weights_folder = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/em/{}.pth?ref_type=heads"
 scalers_folder = weights_folder
 full_em_model_file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/em/checkpoint_770.pth?ref_type=heads"
-file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/gan/netG_epoch_15000.pth"
+gan_file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/gan/netG_epoch_4662.safetensors"
 
 input_dict = {
-    'file_name':file_name,
+    'file_name': gan_file_name,
+    'swap_gan_output_dims': False,
     'full_em_model_file_name':full_em_model_file_name,
     'reporttype': 'pos',
     'reportpoint': [int(el) for el in range(1)],
     'scalers_folder':scalers_folder,
     'bit_pos':[(32,0)],
     'datatype': [('6kHz','83ft'),('12kHz','83ft'),('24kHz','83ft'),
-                               ('24kHz','43ft'),('48kHz','43ft'),('96kHz','43ft')]
+                 ('24kHz','43ft'),('48kHz','43ft'),('96kHz','43ft')]
     }
 
 sim = GeoSim(input_dict)
@@ -44,7 +45,9 @@ set_global_seed(55)  # fix seeds for reproducibility
 set_global_seed(55)  # fix seeds for reproducibility
 # TODO this is another seed than in the app
 
-my_latent_vec_np = np.random.normal(size=60)
+# my_latent_vec_np = np.random.normal(size=60)
+numpy_input = np.load("../chosen_realization_C1.npz")
+my_latent_vec_np = numpy_input['arr_0']
 # my_latent_vec_np = np.random.uniform(low=0.1, high=0.2, size=60)
 my_latent_tensor = torch.tensor(my_latent_vec_np, dtype=torch.float32).unsqueeze(0).to(
     device)  # Add batch dimension and move to device
@@ -152,7 +155,7 @@ ax_res.set_ylim(resistivity.shape[2], 0)
 
 # add colorbar
 cbar = fig.colorbar(im_res, cax=ax_res_cbar)
-cbar.set_label("Resistivity (Ω·m)")
+cbar.set_label("Resistivity (normalized)")
 
 # Hide unused colorbar axes if desired
 ax_img_cbar.axis('off')
