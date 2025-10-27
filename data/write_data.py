@@ -10,23 +10,8 @@ from matplotlib.pyplot import GridSpec
 import pandas as pd
 import pickle
 import csv
-from default_load import full_em_model_file_name, gan_file_name, scalers_folder, load_default_latent_tensor
+from default_load import input_dict, load_default_latent_tensor
 
-# First try. Make data with NN.... Not great.
-
-
-
-input_dict = {
-    'file_name': gan_file_name,
-    'swap_gan_output_dims': False,
-    'full_em_model_file_name':full_em_model_file_name,
-    'reporttype': 'pos',
-    'reportpoint': [int(el) for el in range(1)],
-    'scalers_folder':scalers_folder,
-    'bit_pos':[(32,0)],
-    'datatype': [('6kHz','83ft'),('12kHz','83ft'),('24kHz','83ft'),
-                 ('24kHz','43ft'),('48kHz','43ft'),('96kHz','43ft')]
-    }
 
 sim = GeoSim(input_dict)
 

@@ -6,25 +6,8 @@ import os, sys
 import torch
 import pandas as pd
 import pickle
+from data.default_load import input_dict, load_default_latent_tensor
 
-from NeuralSim.image_to_log import set_global_seed
-
-weights_folder = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/em/{}.pth?ref_type=heads"
-scalers_folder = weights_folder
-full_em_model_file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/em/checkpoint_770.pth?ref_type=heads"
-file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/gan/netG_epoch_15000.pth"
-
-input_dict = {
-        'file_name':file_name,
-        'full_em_model_file_name':full_em_model_file_name,
-        'scalers_folder':scalers_folder,
-        'bit_pos': [(32, 0)],  # Example bit position, adjust as needed
-        'vec_size': 60,  # Example vector size, adjust as needed
-        'reporttype': 'pos',
-        'reportpoint': [int(el) for el in range(1)],
-        'datatype': [('6kHz','83ft'),('12kHz','83ft'),('24kHz','83ft'),
-                       ('24kHz','43ft'),('48kHz','43ft'),('96kHz','43ft')]
-         }
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -37,12 +20,13 @@ rng_state = np.random.get_state()
 
 # reference_model_seed = 777
 # np.random.seed(reference_model_seed)
-# TODO this is another seed logic than in write data
 # TODO do we need write_data at all?
-set_global_seed(55)
+# set_global_seed(55)
 
-reference_model = np.random.normal(size=sim.vec_size)
-latent_reference_model = torch.tensor(reference_model, dtype=torch.float32).unsqueeze(0).to(device)  # Add batch dimension and move to device
+# reference_model = np.random.normal(size=sim.vec_size)
+# latent_reference_model = torch.tensor(reference_model, dtype=torch.float32).unsqueeze(0).to(device)  # Add batch dimension and move to device
+
+latent_reference_model = load_default_latent_tensor().to(device)
 
 np.random.set_state(rng_state)
 

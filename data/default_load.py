@@ -6,6 +6,18 @@ scalers_folder = weights_folder
 full_em_model_file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/em/checkpoint_770.pth?ref_type=heads"
 gan_file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/gan/netG_epoch_4662.safetensors"
 
+input_dict = {
+    'file_name': gan_file_name,
+    'swap_gan_output_dims': False,
+    'full_em_model_file_name':full_em_model_file_name,
+    'reporttype': 'pos',
+    'reportpoint': [int(el) for el in range(1)],
+    'scalers_folder':scalers_folder,
+    'bit_pos':[(32,0)],
+    'datatype': [('6kHz','83ft'),('12kHz','83ft'),('24kHz','83ft'),
+                 ('24kHz','43ft'),('48kHz','43ft'),('96kHz','43ft')]
+    }
+
 def load_default_latent_tensor():
     # my_latent_vec_np = np.random.normal(size=60)
     numpy_input = np.load("../chosen_realization_C1.npz")
