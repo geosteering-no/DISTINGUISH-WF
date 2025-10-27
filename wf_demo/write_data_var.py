@@ -1,12 +1,10 @@
 from GeoSim.sim import GeoSim
 import numpy as np
 import csv
-from scipy.linalg import block_diag
-import os, sys
 import torch
 import pandas as pd
 import pickle
-from data.default_load import input_dict, load_default_latent_tensor
+from wf_demo.default_load import input_dict, load_default_latent_tensor
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

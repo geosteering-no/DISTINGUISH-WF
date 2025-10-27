@@ -1,8 +1,6 @@
 import numpy as np
 from GeoSim.sim import GeoSim
 
-from NeuralSim.vector_to_log import FullModel
-from NeuralSim.image_to_log import set_global_seed
 import torch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 import matplotlib.pyplot as plt
@@ -10,7 +8,7 @@ from matplotlib.pyplot import GridSpec
 import pandas as pd
 import pickle
 import csv
-from default_load import input_dict, load_default_latent_tensor
+from wf_demo.default_load import input_dict, load_default_latent_tensor
 
 
 sim = GeoSim(input_dict)
