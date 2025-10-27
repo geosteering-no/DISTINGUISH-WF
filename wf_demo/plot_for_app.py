@@ -32,7 +32,8 @@ from pathoptim.DP import perform_dynamic_programming, evaluate_earth_model, crea
 # warnings.filterwarnings(action='ignore', category=FutureWarning)
 # warnings.filterwarnings(action='ignore', category=UserWarning)
 
-gan_file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/gan/netG_epoch_15000.pth"
+# gan_file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/gan/netG_epoch_15000.pth"
+from default_load import gan_file_name
 gan_vec_size = 60
 gan_evaluator = GanEvaluator(gan_file_name, gan_vec_size)
 
