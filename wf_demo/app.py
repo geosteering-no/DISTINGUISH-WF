@@ -16,8 +16,6 @@ from input_output import read_config
 
 from write_data_var import new_data
 
-import numpy as np
-
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
@@ -28,13 +26,16 @@ import matplotlib
 from copy import deepcopy as dp
 import time
 
+from wf_demo.default_load import input_dict, load_default_latent_tensor
+
+
 global_extent = [0, 640, -16.25, 15.75]
 norm = Normalize(vmin=0.0, vmax=1)
 
-weights_folder = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/em/{}.pth?ref_type=heads"
-scalers_folder = weights_folder
-full_em_model_file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/em/checkpoint_770.pth?ref_type=heads"
-file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/gan/netG_epoch_15000.pth"
+# weights_folder = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/em/{}.pth?ref_type=heads"
+# scalers_folder = weights_folder
+# full_em_model_file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/em/checkpoint_770.pth?ref_type=heads"
+# file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/gan/netG_epoch_15000.pth"
 
 # build a streamlit app to run the workflow. On the first run of the app we will be in the initial state.
 # The user has to specify the start position of the well. Number of decissions are always 1, and the user have to specify
@@ -56,7 +57,7 @@ if st.session_state.first_position:
                                 min_value=0, max_value=64, value=int(32)), 0)
     st.session_state['path'] = [start_position]
 else:
-    state = st.session_state.state
+    state = st.session_state.ensemble_state
     start_position = st.session_state.start_position_state
     st.session_state['path'].append(start_position)
 
@@ -84,16 +85,9 @@ def da(state, start_position):
     # state = np.load('orig_prior.npz')['m'] # the prior latent vector
     np.savez('prior.npz', **{'x': state})  # save the prior as a file
 
-    kf = {'bit_pos': [start_position],
-          'vec_size': 60,
-          'reporttype': 'pos',
-          'reportpoint': [int(el) for el in range(1)],
-          'datatype': [('6kHz','83ft'),('12kHz','83ft'),('24kHz','83ft'),
-                       ('24kHz','43ft'),('48kHz','43ft'),('96kHz','43ft')],
-          'parallel': 1,
-          'file_name': file_name,
-          'full_em_model_file_name': full_em_model_file_name,
-         'scalers_folder': scalers_folder}
+    kf = input_dict.copy()
+
+    kf['bit_pos'] = [start_position]
 
     sim = GeoSim(kf)
 
@@ -217,7 +211,7 @@ with col1:
         next_position = apply_user_input()
         st.session_state.start_position_state = next_position
         state = da(state, next_position)
-        st.session_state.state = state
+        st.session_state.ensemble_state = state
         toggle_first_step()
 with col2:
     if st.button('Drill like a Robot'):
@@ -225,5 +219,5 @@ with col2:
             next_optimal = compute_and_apply_robot_suggestion()
         st.session_state.start_position_state = next_optimal
         state = da(state, next_optimal)
-        st.session_state.state = state
+        st.session_state.ensemble_state = state
         toggle_first_step()
