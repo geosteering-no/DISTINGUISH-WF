@@ -10,6 +10,7 @@ dependencies = [
     "streamlit",
     "plotly",
     "PET-GAN-LOG @ git+https://github.com/geosteering-no/PET-GAN-LOG.git",
+    #    "pathoptim @ git+https://github.com/geosteering-no/PET-GAN-LOG.git",
     "pathoptim @ git+https://github.com/geosteering-no/DSUP.git",
     "GAN-EM-model @ git+https://github.com/geosteering-no/GAN-EM-model.git",
     "udar_proxi @ git+https://github.com/KriFos1/UTA-proxy-final.git"
