@@ -44,8 +44,8 @@ file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/mas
 if 'first_position' not in st.session_state:
     st.session_state['first_position'] = True
 # Also, plot the current state as a main feature of the app.
-st.title('Distinguish Open Workflow (GMT)')
-# GMT refers to Generic Modern [UDAR] Tool
+st.title('Distinguish Open Workflow (GMO)')
+# GMO refers to Generic Modern [UDAR] Observations
 
 next_optimal = None
 
