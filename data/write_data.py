@@ -10,13 +10,11 @@ from matplotlib.pyplot import GridSpec
 import pandas as pd
 import pickle
 import csv
+from default_load import full_em_model_file_name, gan_file_name, scalers_folder, load_default_latent_tensor
 
 # First try. Make data with NN.... Not great.
 
-weights_folder = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/em/{}.pth?ref_type=heads"
-scalers_folder = weights_folder
-full_em_model_file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/em/checkpoint_770.pth?ref_type=heads"
-gan_file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/gan/netG_epoch_4662.safetensors"
+
 
 input_dict = {
     'file_name': gan_file_name,
@@ -38,19 +36,14 @@ datatype = 'UDAR'
 
 sim.setup_fwd_run(**{'test':'foo'})
 
-set_global_seed(42)  # fix seeds for reproducibility
-set_global_seed(43)  # fix seeds for reproducibility
-set_global_seed(55)  # fix seeds for reproducibility
+# these seeds are intended for a newer gan model.
+# set_global_seed(42)  # fix seeds for reproducibility
+# set_global_seed(43)  # fix seeds for reproducibility
+# set_global_seed(55)  # fix seeds for reproducibility
+# set_global_seed(55)  # fix seeds for reproducibility
 
-set_global_seed(55)  # fix seeds for reproducibility
-# TODO this is another seed than in the app
+my_latent_tensor = load_default_latent_tensor().to(device)
 
-# my_latent_vec_np = np.random.normal(size=60)
-numpy_input = np.load("../chosen_realization_C1.npz")
-my_latent_vec_np = numpy_input['arr_0']
-# my_latent_vec_np = np.random.uniform(low=0.1, high=0.2, size=60)
-my_latent_tensor = torch.tensor(my_latent_vec_np, dtype=torch.float32).unsqueeze(0).to(
-    device)  # Add batch dimension and move to device
 index_vector = torch.full((1, 10), fill_value=32, dtype=torch.long).to(device)
 image, resistivity, logs = sim.NNmodel.forward(my_latent_tensor, index_vector, output_transien_results=True)
 
