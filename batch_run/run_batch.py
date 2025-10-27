@@ -1,7 +1,11 @@
 import numpy as np
 import warnings
-
+import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
+import time
 import torch
+
+from wf_demo.default_load import input_dict
 
 # Suppress FutureWarnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -16,16 +20,7 @@ from input_output import read_config
 
 from wf_demo.write_data_var import new_data
 
-import numpy as np
 
-import streamlit as st
-import plotly.express as px
-import plotly.graph_objects as go
-import matplotlib.pyplot as plt
-from matplotlib.colors import Normalize
-import matplotlib
-from copy import deepcopy as dp
-import time
 
 global_extent = [0, 640, -16.25, 15.75]
 norm = Normalize(vmin=0.0, vmax=1)
@@ -34,7 +29,7 @@ norm = Normalize(vmin=0.0, vmax=1)
 weights_folder = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/em/{}.pth?ref_type=heads"
 scalers_folder = weights_folder
 full_em_model_file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/em/checkpoint_770.pth?ref_type=heads"
-file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/gan/netG_epoch_15000.pth"
+# file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/gan/netG_epoch_15000.pth"
 
 
 def da(state, start_position):
@@ -54,6 +49,8 @@ def da(state, start_position):
           'file_name': file_name,
           'full_em_model_file_name': full_em_model_file_name,
          'scalers_folder': scalers_folder}
+
+    kf = input_dict.copy()
 
     sim = GeoSim(kf)
 
@@ -86,14 +83,14 @@ def compute_and_apply_robot_suggestion(state, start_position):
 
 if __name__ == "__main__":
     # get intitial state
-    state = np.load('../orig_prior_small.npz')['x']  # the prior latent vector
+    ensemble_state = np.load('../orig_prior_small.npz')['x']  # the prior latent vector
     start_position = (32, 0)
     path = [start_position]
 
     # todo change the steps
     for i in range(1, 10):
-        next_optimal = compute_and_apply_robot_suggestion(state, start_position)
+        next_optimal = compute_and_apply_robot_suggestion(ensemble_state, start_position)
         path.append(next_optimal)
         start_position = next_optimal
-        state = da(state, next_optimal)
+        ensemble_state = da(ensemble_state, next_optimal)
 
