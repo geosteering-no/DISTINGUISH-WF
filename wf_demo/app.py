@@ -170,7 +170,9 @@ if st.checkbox('Show Human suggestion'):
 
 
 def compute_and_apply_robot_suggestion():
-    next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
+    next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32).to(device),
+                                       start_position,
+                                       true_sim.simulator.NNmodel.gan_evaluator)
     return next_optimal
 
 
