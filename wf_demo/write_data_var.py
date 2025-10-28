@@ -9,10 +9,11 @@ from wf_demo.default_load import input_dict, load_default_latent_tensor
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-sim = GeoSim(input_dict)
+# this is simulator of the true data
+sim_truth = GeoSim(input_dict)
 
-sim.l_prim = [0]
-sim.all_data_types = [('6kHz','83ft'),('12kHz','83ft'),('24kHz','83ft'),('24kHz','43ft'),('48kHz','43ft'),('96kHz','43ft')]
+sim_truth.l_prim = [0]
+sim_truth.all_data_types = [('6kHz', '83ft'), ('12kHz', '83ft'), ('24kHz', '83ft'), ('24kHz', '43ft'), ('48kHz', '43ft'), ('96kHz', '43ft')]
 
 rng_state = np.random.get_state()
 
@@ -24,7 +25,7 @@ rng_state = np.random.get_state()
 # reference_model = np.random.normal(size=sim.vec_size)
 # latent_reference_model = torch.tensor(reference_model, dtype=torch.float32).unsqueeze(0).to(device)  # Add batch dimension and move to device
 
-latent_reference_model = load_default_latent_tensor().to(device)
+latent_synthetic_truth = load_default_latent_tensor().to(device)
 
 np.random.set_state(rng_state)
 
@@ -34,7 +35,7 @@ def new_data(keys):
     index_vector = torch.full((1, keys['bit_pos'][0][1]), fill_value=keys['bit_pos'][0][0],
                               dtype=torch.long).to(device)
 
-    logs = sim.NNmodel.forward(latent_reference_model, index_vector, output_transien_results=False)
+    logs = sim_truth.NNmodel.forward(latent_synthetic_truth, index_vector, output_transien_results=False)
     logs_np = logs.cpu().detach().numpy()[keys['bit_pos'][0][1]-1,:,-8:]
 
     k = open('../data/assim_index.csv', 'w', newline='')
@@ -47,18 +48,18 @@ def new_data(keys):
 
     data = {}
     var = {}
-    for count, di in enumerate(sim.all_data_types):
+    for count, di in enumerate(sim_truth.all_data_types):
         freq, dist = di
         data[(freq, dist)] = [logs_np[count, :]]
         # var[(freq, dist)] = [[['REL', 10] if abs(el) > abs(0.1*np.mean(values)) else ['ABS', (0.1*np.mean(values))**2] for el in val] for val in values]
         var[(freq, dist)] = [[['ABS', (0.05 * np.mean(val)) ** 2] for val in logs_np[count, :]]]
 
-    df = pd.DataFrame(data, columns=sim.all_data_types, index=[0])
+    df = pd.DataFrame(data, columns=sim_truth.all_data_types, index=[0])
     df.index.name = 'tvd'
     # df.to_csv('data.csv',index=True)
     df.to_pickle('../data/data.pkl')
 
-    df = pd.DataFrame(var, columns=sim.all_data_types, index=[0])
+    df = pd.DataFrame(var, columns=sim_truth.all_data_types, index=[0])
     df.index.name = 'tvd'
     df.to_csv('../data/var.csv', index=True)
     with open('../data/var.pkl', 'wb') as f:
@@ -70,7 +71,7 @@ def new_data(keys):
         k.writelines(str(c) + '\n')
     k.close()
 
-    writer5.writerow([str(el) for el in sim.all_data_types])
+    writer5.writerow([str(el) for el in sim_truth.all_data_types])
     l.close()
 
 

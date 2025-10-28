@@ -1,3 +1,5 @@
+from distutils.command.install import value
+
 import numpy as np
 import warnings
 
@@ -70,33 +72,34 @@ def toggle_first_step():
 @st.cache_data
 def get_gan_earth(state):
     # make state into a tensor
-    true_facies = earth(torch.tensor(state,dtype=torch.float32))
+    facies_ensemble = earth(torch.tensor(state, dtype=torch.float32))
 
     weights = np.array([-0.1, 1, 0.5])
-    gan = np.mean(true_facies * weights.reshape(1, 3, 1,1),axis=1)  # Apply weights to the true facies
+    value_ensemble = np.mean(facies_ensemble * weights.reshape(1, 3, 1, 1), axis=1)  # Apply weights to the true facies
 
-    return gan, true_facies
+    return value_ensemble, facies_ensemble
 
 @st.cache_data
 def da(state, start_position):
     num_decissions = 1  # 64 # number of decissions to make
 
     # start_position = (32, 0) # initial position of the well
-    # state = np.load('orig_prior.npz')['m'] # the prior latent vector
+    # state = np.load('orig_prior_2024.npz')['m'] # the prior latent vector
     np.savez('prior.npz', **{'x': state})  # save the prior as a file
 
-    kf = input_dict.copy()
+    keys_filter = input_dict.copy()
 
-    kf['bit_pos'] = [start_position]
+    keys_filter['bit_pos'] = [start_position]
 
-    sim = GeoSim(kf)
+    sim_ensemble = GeoSim(keys_filter)
 
-    kd, kf = read_config.read_txt('DA.pipt')  # read the config file.
+    keys_data, _ = read_config.read_txt('DA.pipt')  # read the config file.
 
     for i in range(num_decissions):
         # start by assimilating data at the current position
 
         # make a set of syntetic data for the current position
+        # todo check if we need to pass keys_data
         new_data({'bit_pos': [start_position],
                   'vec_size': 60,
                   'reporttype': 'pos',
@@ -105,17 +108,19 @@ def da(state, start_position):
                                ('24kHz','43ft'),('48kHz','43ft'),('96kHz','43ft')]
                   })
         # do inversion
-        sim.update_bit_pos([start_position])
-        analysis = pipt_init.init_da(kd, kd, sim)  # Re-initialize the data assimilation to read the new data
+        sim_ensemble.update_bit_pos([start_position])
+        analysis = pipt_init.init_da(keys_data, keys_data, sim_ensemble)  # Re-initialize the data assimilation to read the new data
         assimilation = Assimilate(analysis)
         assimilation.run()
 
         state = np.load('posterior_state_estimate.npz')['x']  # import the posterior state estimate
         return state
 
-gan, true_facies = get_gan_earth(state)
+value_ensemble, facies_ensemble = get_gan_earth(state)
 
-fig = px.imshow(gan.mean(axis=0), aspect='auto', color_continuous_scale='viridis')
+# this is the plotting canvas and the average earth value
+fig = px.imshow(facies_ensemble.mean(axis=0), aspect='auto', color_continuous_scale='viridis')
+# fig = px.imshow(facies_ensemble[0, :, :], aspect='auto', color_continuous_scale='viridis')
 
 # Position the colorbar horizontally below the figure
 fig.update_layout(coloraxis_colorbar=dict(
@@ -127,6 +132,7 @@ fig.update_layout(coloraxis_colorbar=dict(
     len=0.8,  # Length of the colorbar
 ))
 
+# this draws only the current initial bit position
 fig.add_scatter(x=[start_position[1]], y=[start_position[0]], mode='markers', marker=dict(color='red', size=10),
                 name='Start Position')
 
@@ -161,7 +167,7 @@ if st.checkbox('Show Robot paths'):
     # calculate the robot paths
     # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
     next_optimal = compute_and_apply_robot_suggestion()
-    optimal_paths = [perform_dynamic_programming(gan[j, :, :], start_position,
+    optimal_paths = [perform_dynamic_programming(value_ensemble[j, :, :], start_position,
                                                  cost_vector=pathfinder().get_cost_vector())[2] for j in
                      range(state.shape[1])]
     # plot the optimal paths in the plotly figure
