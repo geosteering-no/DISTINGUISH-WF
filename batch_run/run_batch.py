@@ -5,8 +5,6 @@ from matplotlib.colors import Normalize
 import time
 import torch
 
-from wf_demo.default_load import input_dict
-
 # Suppress FutureWarnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
@@ -16,10 +14,11 @@ from pathoptim.DP import perform_dynamic_programming
 from GeoSim.sim import GeoSim
 from pipt.loop.assimilation import Assimilate
 from pipt import pipt_init
-from input_output import read_config
 
 from wf_demo.default_load import input_dict, load_default_latent_tensor
-from wf_demo.write_data_var import new_data
+from wf_demo.write_data_var import SyntheticTruth
+
+
 
 
 
