@@ -130,7 +130,7 @@ def da(state, start_position):
 value_ensemble, facies_ensemble = get_gan_earth(state)
 
 # this is the plotting canvas and the average earth value
-fig = px.imshow(value_ensemble.mean(axis=0), aspect='auto', color_continuous_scale='viridis')
+fig = px.imshow(value_ensemble[:,:,:].mean(axis=0), aspect='auto', color_continuous_scale='viridis')
 # fig = px.imshow(facies_ensemble[0, :, :], aspect='auto', color_continuous_scale='viridis')
 
 # Position the colorbar horizontally below the figure
