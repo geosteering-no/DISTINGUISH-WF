@@ -29,6 +29,8 @@ import time
 from wf_demo.default_load import input_dict, load_default_latent_tensor
 
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 global_extent = [0, 640, -16.25, 15.75]
 norm = Normalize(vmin=0.0, vmax=1)
 
@@ -49,16 +51,21 @@ st.title('Distinguish Open Workflow (GMO)')
 # GMO refers to Generic Modern [UDAR] Observations
 
 next_optimal = None
-true_sim = None
+# this creates an instance if a simulator for synthetic truth
+
+
+true_sim = SyntheticTruth(latent_truth_vector=load_default_latent_tensor().to(device), device=device)
 
 # Show a slider first to select the start position of the well
 if st.session_state.first_position:
     state = np.load('../orig_prior_small.npz')['x']  # the prior latent vector
+    # the commented code loads the truth as the state for checking correctness
+    # state_torch = load_default_latent_tensor().cpu()
+    # state = state_torch.permute(1,0).numpy()
+    print(f'State tensor shape {state.shape}')
     start_position = (st.slider(label='Enter the horizontal start position of the well', key='start_position',
                                 min_value=0, max_value=64, value=int(32)), 0)
     st.session_state['path'] = [start_position]
-    # this creates an instance if a simulator for synthetic truth
-    true_sim = SyntheticTruth(latent_truth_vector=load_default_latent_tensor())
 else:
     state = st.session_state.ensemble_state
     start_position = st.session_state.start_position_state
@@ -73,7 +80,10 @@ def toggle_first_step():
 @st.cache_data
 def get_gan_earth(state):
     # make state into a tensor
-    facies_ensemble = earth(torch.tensor(state, dtype=torch.float32))
+    # TODO fix with passing device
+    sim_ensemble = GeoSim(input_dict)
+    # print(f"Input for display sim: {input_dict}")
+    facies_ensemble = earth(torch.tensor(state, dtype=torch.float32).to(device), simulator=sim_ensemble)
 
     weights = np.array([-0.1, 1, 0.5])
     value_ensemble = np.mean(facies_ensemble * weights.reshape(1, 3, 1, 1), axis=1)  # Apply weights to the true facies
@@ -187,7 +197,15 @@ if st.checkbox('Show Robot suggestion'):
                     marker=dict(color='black', size=10, symbol='cross'),
                     name='Robot suggestion')
 
-# if st.checkbox('Cheat!'):
+if st.checkbox('Cheat!'):
+    true_gan_output = true_sim.simulator.NNmodel.eval_gan(true_sim.latent_synthetic_truth)
+    print(f"The output {true_gan_output}")
+    print(f"Output shape {true_gan_output.shape}")
+    np_gan_output = true_gan_output.cpu().numpy()
+    print(f"The output {np_gan_output}")
+    print(f"Output shape {np_gan_output.shape}")
+    fig = px.imshow(np_gan_output[0,0,:,:], aspect='auto', color_continuous_scale='viridis')
+#
 #     x = np.array(range(64))
 #     y = np.array(range(64))
 #     X, Y = np.meshgrid(x, y)

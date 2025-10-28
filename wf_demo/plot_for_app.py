@@ -33,13 +33,10 @@ from pathoptim.DP import perform_dynamic_programming, evaluate_earth_model, crea
 # warnings.filterwarnings(action='ignore', category=UserWarning)
 
 # gan_file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/gan/netG_epoch_15000.pth"
-from default_load import gan_file_name
-gan_vec_size = 60
-gan_evaluator = GanEvaluator(gan_file_name, gan_vec_size)
 
 global_extent = [0, 640, -16.25, 15.75]
 
-def earth(state):
+def earth(state, simulator: GeoSim):
     # we need to switch to TkAgg to show GUI, something switches it to somethiong else
     matplotlib.use('TkAgg')
     plot_path = 'figures/'
@@ -51,11 +48,19 @@ def earth(state):
 
     #true_resistivity_image = convert_facies_to_resistivity(true_earth_model_facies)
 
+    # # todo should we switch back to probability of sand ??? (use custom weights)
+    # simulate one
+    # erath_model_np = earth_model_from_vector(simulator.NNmodel.gan_evaluator, state[:, 0])
+    state_torch = state.permute(1,0)
+    print(f"Input dim {state_torch.shape}")
+    earth_model = simulator.NNmodel.eval_gan(state_torch)
+    earth_model_np = earth_model.cpu().numpy()
+    print(f"output model dim {earth_model_np.shape}")
+    post_one = earth_model_np[:,0:3,:,:]
+    # post_earth = np.array([earth_model_from_vector(simulator.NNmodel.gan_evaluator, state[:, el]).cpu() for el in range(state.shape[1])])
+    # post_earth = simulator.NNmodel.eval_gan(state)
 
-    # todo should we switch back to probability of sand ??? (use custom weights)
-    post_earth = np.array([earth_model_from_vector(gan_evaluator, state[:, el]) for el in range(state.shape[1])])
-
-    return post_earth
+    return post_one
 
     # creating the figure
     fig, ax = plt.subplots(figsize=(10, 5))
