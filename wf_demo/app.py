@@ -160,6 +160,35 @@ def apply_user_input(user_choice: str = None):
         next_position = (start_position[0] + 1, start_position[1] + 1)
     return next_position
 
+if st.checkbox('Cheat!'):
+    true_gan_output = true_sim.simulator.NNmodel.eval_gan(true_sim.latent_synthetic_truth)
+    print(f"The output {true_gan_output}")
+    print(f"Output shape {true_gan_output.shape}")
+    np_gan_output = true_gan_output.cpu().numpy()
+    print(f"The output {np_gan_output}")
+    print(f"Output shape {np_gan_output.shape}")
+    fig = px.imshow(np_gan_output[0,0,:,:], aspect='auto', color_continuous_scale='viridis')
+
+    #
+    #     x = np.array(range(64))
+    #     y = np.array(range(64))
+    #     X, Y = np.meshgrid(x, y)
+    #     Z = true_facies[0, :, :]
+    #     fig.add_trace(go.Contour(z=Z, x=x, y=y, contours=dict(
+    #         start=-1,
+    #         end=1,
+    #         size=1.9,
+    #         coloring='none'
+    #     ),
+    #                              line=dict(
+    #                                  width=2,
+    #                                  color='white',
+    #                                  dash='dash'
+    #                              ),
+    #                              showscale=False  # Hide the color scale for the contour
+    #                              ))
+
+
 
 if st.checkbox('Show Human suggestion'):
     user_step_select = st.radio('What is the next step?', ['Drill up', 'Drill ahead', 'Drill down'])
@@ -176,7 +205,8 @@ def compute_and_apply_robot_suggestion():
     return next_optimal
 
 
-# ask the user to show all the DP paths
+# show all the DP paths
+# TODO show paths starting from the suggestion instead
 if st.checkbox('Show Robot paths'):
     # calculate the robot paths
     # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
@@ -200,32 +230,7 @@ if st.checkbox('Show Robot suggestion'):
                     marker=dict(color='black', size=10, symbol='cross'),
                     name='Robot suggestion')
 
-if st.checkbox('Cheat!'):
-    true_gan_output = true_sim.simulator.NNmodel.eval_gan(true_sim.latent_synthetic_truth)
-    print(f"The output {true_gan_output}")
-    print(f"Output shape {true_gan_output.shape}")
-    np_gan_output = true_gan_output.cpu().numpy()
-    print(f"The output {np_gan_output}")
-    print(f"Output shape {np_gan_output.shape}")
-    fig = px.imshow(np_gan_output[0,0,:,:], aspect='auto', color_continuous_scale='viridis')
-#
-#     x = np.array(range(64))
-#     y = np.array(range(64))
-#     X, Y = np.meshgrid(x, y)
-#     Z = true_facies[0, :, :]
-#     fig.add_trace(go.Contour(z=Z, x=x, y=y, contours=dict(
-#         start=-1,
-#         end=1,
-#         size=1.9,
-#         coloring='none'
-#     ),
-#                              line=dict(
-#                                  width=2,
-#                                  color='white',
-#                                  dash='dash'
-#                              ),
-#                              showscale=False  # Hide the color scale for the contour
-#                              ))
+
 
 path_rows, path_cols = zip(*(st.session_state['path']))
 fig.add_trace(go.Scatter(x=path_cols, y=path_rows, mode='lines',
