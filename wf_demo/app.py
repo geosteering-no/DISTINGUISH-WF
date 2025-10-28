@@ -1,5 +1,3 @@
-from distutils.command.install import value
-
 import numpy as np
 import warnings
 
@@ -16,7 +14,7 @@ from pipt.loop.assimilation import Assimilate
 from pipt import pipt_init
 from input_output import read_config
 
-from write_data_var import new_data
+from write_data_var import SyntheticTruth
 
 import streamlit as st
 import plotly.express as px
@@ -51,6 +49,7 @@ st.title('Distinguish Open Workflow (GMO)')
 # GMO refers to Generic Modern [UDAR] Observations
 
 next_optimal = None
+true_sim = None
 
 # Show a slider first to select the start position of the well
 if st.session_state.first_position:
@@ -58,6 +57,8 @@ if st.session_state.first_position:
     start_position = (st.slider(label='Enter the horizontal start position of the well', key='start_position',
                                 min_value=0, max_value=64, value=int(32)), 0)
     st.session_state['path'] = [start_position]
+    # this creates an instance if a simulator for synthetic truth
+    true_sim = SyntheticTruth(latent_truth_vector=load_default_latent_tensor())
 else:
     state = st.session_state.ensemble_state
     start_position = st.session_state.start_position_state
@@ -100,13 +101,13 @@ def da(state, start_position):
 
         # make a set of syntetic data for the current position
         # todo check if we need to pass keys_data
-        new_data({'bit_pos': [start_position],
-                  'vec_size': 60,
-                  'reporttype': 'pos',
-                  'reportpoint': [int(el) for el in range(1)],
-                  'datatype': [('6kHz','83ft'),('12kHz','83ft'),('24kHz','83ft'),
-                               ('24kHz','43ft'),('48kHz','43ft'),('96kHz','43ft')]
-                  })
+        true_sim.acquire_data({'bit_pos': [start_position],
+                              'vec_size': 60,
+                              'reporttype': 'pos',
+                              'reportpoint': [int(el) for el in range(1)],
+                              'datatype': [('6kHz','83ft'),('12kHz','83ft'),('24kHz','83ft'),
+                                           ('24kHz','43ft'),('48kHz','43ft'),('96kHz','43ft')]
+                              })
         # do inversion
         sim_ensemble.update_bit_pos([start_position])
         analysis = pipt_init.init_da(keys_data, keys_data, sim_ensemble)  # Re-initialize the data assimilation to read the new data
@@ -119,7 +120,7 @@ def da(state, start_position):
 value_ensemble, facies_ensemble = get_gan_earth(state)
 
 # this is the plotting canvas and the average earth value
-fig = px.imshow(facies_ensemble.mean(axis=0), aspect='auto', color_continuous_scale='viridis')
+fig = px.imshow(value_ensemble.mean(axis=0), aspect='auto', color_continuous_scale='viridis')
 # fig = px.imshow(facies_ensemble[0, :, :], aspect='auto', color_continuous_scale='viridis')
 
 # Position the colorbar horizontally below the figure

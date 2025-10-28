@@ -4,74 +4,71 @@ import csv
 import torch
 import pandas as pd
 import pickle
+
+
 from wf_demo.default_load import input_dict, load_default_latent_tensor
 
+class SyntheticTruth:
+    def __init__(self, latent_truth_vector, device=None):
+        if device is None:
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        else:
+            self.device = device
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # this is simulator of the true data
+        self.sim_truth = GeoSim(input_dict)
 
-# this is simulator of the true data
-sim_truth = GeoSim(input_dict)
+        self.sim_truth.l_prim = [0]
+        self.sim_truth.all_data_types = [('6kHz', '83ft'), ('12kHz', '83ft'), ('24kHz', '83ft'), ('24kHz', '43ft'), ('48kHz', '43ft'), ('96kHz', '43ft')]
 
-sim_truth.l_prim = [0]
-sim_truth.all_data_types = [('6kHz', '83ft'), ('12kHz', '83ft'), ('24kHz', '83ft'), ('24kHz', '43ft'), ('48kHz', '43ft'), ('96kHz', '43ft')]
-
-rng_state = np.random.get_state()
-
-# reference_model_seed = 777
-# np.random.seed(reference_model_seed)
-# TODO do we need write_data at all?
-# set_global_seed(55)
-
-# reference_model = np.random.normal(size=sim.vec_size)
-# latent_reference_model = torch.tensor(reference_model, dtype=torch.float32).unsqueeze(0).to(device)  # Add batch dimension and move to device
-
-latent_synthetic_truth = load_default_latent_tensor().to(device)
-
-np.random.set_state(rng_state)
+        self.latent_synthetic_truth = latent_truth_vector
+        # load_default_latent_tensor().to(device))
 
 
-def new_data(keys):
 
-    index_vector = torch.full((1, keys['bit_pos'][0][1]), fill_value=keys['bit_pos'][0][0],
-                              dtype=torch.long).to(device)
+    def acquire_data(self, keys):
 
-    logs = sim_truth.NNmodel.forward(latent_synthetic_truth, index_vector, output_transien_results=False)
-    logs_np = logs.cpu().detach().numpy()[keys['bit_pos'][0][1]-1,:,-8:]
+        index_vector = torch.full((1, keys['bit_pos'][0][1]), fill_value=keys['bit_pos'][0][0],
+                                  dtype=torch.long).to(self.device)
 
-    k = open('../data/assim_index.csv', 'w', newline='')
-    # writer4 = csv.writer(k)
-    l = open('../data/datatyp.csv', 'w', newline='')
-    writer5 = csv.writer(l)
+        logs = self.sim_truth.NNmodel.forward(self.latent_synthetic_truth, index_vector, output_transien_results=False)
+        logs_np = logs.cpu().detach().numpy()[keys['bit_pos'][0][1]-1,:,-8:]
 
-    # build a pandas dataframe with the data.
-    # The tvd is the index and the tuple (freq,dist) is the columns
+        # bookkeeping
+        k = open('../data/assim_index.csv', 'w', newline='')
+        # writer4 = csv.writer(k)
+        l = open('../data/datatyp.csv', 'w', newline='')
+        writer5 = csv.writer(l)
 
-    data = {}
-    var = {}
-    for count, di in enumerate(sim_truth.all_data_types):
-        freq, dist = di
-        data[(freq, dist)] = [logs_np[count, :]]
-        # var[(freq, dist)] = [[['REL', 10] if abs(el) > abs(0.1*np.mean(values)) else ['ABS', (0.1*np.mean(values))**2] for el in val] for val in values]
-        var[(freq, dist)] = [[['ABS', (0.05 * np.mean(val)) ** 2] for val in logs_np[count, :]]]
+        # build a pandas dataframe with the data.
+        # The tvd is the index and the tuple (freq,dist) is the columns
 
-    df = pd.DataFrame(data, columns=sim_truth.all_data_types, index=[0])
-    df.index.name = 'tvd'
-    # df.to_csv('data.csv',index=True)
-    df.to_pickle('../data/data.pkl')
+        data = {}
+        var = {}
+        for count, di in enumerate(self.sim_truth.all_data_types):
+            freq, dist = di
+            data[(freq, dist)] = [logs_np[count, :]]
+            # var[(freq, dist)] = [[['REL', 10] if abs(el) > abs(0.1*np.mean(values)) else ['ABS', (0.1*np.mean(values))**2] for el in val] for val in values]
+            var[(freq, dist)] = [[['ABS', (0.05 * np.mean(val)) ** 2] for val in logs_np[count, :]]]
 
-    df = pd.DataFrame(var, columns=sim_truth.all_data_types, index=[0])
-    df.index.name = 'tvd'
-    df.to_csv('../data/var.csv', index=True)
-    with open('../data/var.pkl', 'wb') as f:
-        pickle.dump(df, f)
+        df = pd.DataFrame(data, columns=self.sim_truth.all_data_types, index=[0])
+        df.index.name = 'tvd'
+        # df.to_csv('data.csv',index=True)
+        df.to_pickle('../data/data.pkl')
 
-    # filt = [i*10 for i in range(50)]
-    for c, _ in enumerate([0]):
-        # if c in filt:
-        k.writelines(str(c) + '\n')
-    k.close()
+        df = pd.DataFrame(var, columns=self.sim_truth.all_data_types, index=[0])
+        df.index.name = 'tvd'
+        df.to_csv('../data/var.csv', index=True)
+        with open('../data/var.pkl', 'wb') as f:
+            pickle.dump(df, f)
 
-    writer5.writerow([str(el) for el in sim_truth.all_data_types])
-    l.close()
+        # filt = [i*10 for i in range(50)]
+        for c, _ in enumerate([0]):
+            # if c in filt:
+            k.writelines(str(c) + '\n')
+        k.close()
+
+        writer5.writerow([str(el) for el in self.sim_truth.all_data_types])
+        l.close()
 
 
