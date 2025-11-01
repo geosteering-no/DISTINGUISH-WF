@@ -59,7 +59,7 @@ true_sim = SyntheticTruth(latent_truth_vector=load_default_latent_tensor().to(de
 # Show a slider first to select the start position of the well
 if st.session_state.first_position:
     # state = np.load('../orig_prior_small.npz')['x']  # the prior latent vector
-    state = np.load('../orig_prior_2024.npz')['m']
+    state = np.load('../orig_prior_2024.npz')['m'][:,:]
     # the commented code loads the truth as the state for checking correctness
     # state_torch = load_default_latent_tensor().cpu()
     # state = state_torch.permute(1,0).numpy()
@@ -190,9 +190,10 @@ if st.checkbox('Cheat!'):
     #                              showscale=False  # Hide the color scale for the contour
     #                              ))
 
-
+flags_string = ""
 
 if st.checkbox('Show Human suggestion'):
+    flags_string += "_human"
     user_step_select = st.radio('What is the next step?', ['Drill up', 'Drill ahead', 'Drill down'])
     next_position = apply_user_input(user_step_select)
     fig.add_scatter(x=[next_position[1]], y=[next_position[0]], mode='markers',
