@@ -148,7 +148,7 @@ fig.update_layout(coloraxis_colorbar=dict(
 fig.add_scatter(x=[start_position[1]], y=[start_position[0]], mode='markers', marker=dict(color='red', size=10),
                 name='Start Position')
 
-st.write(f'The current position of the well is at: {start_position}')
+# st.write(f'The current position of the well is at: {start_position}')
 
 
 def apply_user_input(user_choice: str = None):
@@ -206,6 +206,13 @@ def compute_and_apply_robot_suggestion():
                                        true_sim.simulator.NNmodel.gan_evaluator)
     return next_optimal
 
+if st.checkbox('Show Robot suggestion'):
+    flags_string += "_robot"
+    # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
+    next_optimal = compute_and_apply_robot_suggestion()
+    fig.add_scatter(x=[next_optimal[1]], y=[next_optimal[0]], mode='markers',
+                    marker=dict(color='black', size=10, symbol='cross'),
+                    name='Robot suggestion')
 
 # show all the DP paths
 # TODO show paths starting from the suggestion instead
@@ -213,9 +220,10 @@ if st.checkbox('Show Robot paths'):
     # calculate the robot paths
     # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
     next_optimal = compute_and_apply_robot_suggestion()
+    flags_string += "_all"
+
     optimal_paths = [perform_dynamic_programming(value_ensemble[j, :, :], start_position,
-                                                 cost_vector=pathfinder().get_cost_vector())[2] for j in
-                     range(state.shape[1])]
+                     cost_vector=pathfinder().get_cost_vector())[2] for j in range(state.shape[1])]
     # plot the optimal paths in the plotly figure
     for j in range(state.shape[1]):
         path_rows, path_cols = zip(*(optimal_paths[j]))
@@ -225,18 +233,31 @@ if st.checkbox('Show Robot paths'):
         fig.add_trace(
             go.Scatter(x=path_cols, y=path_rows, mode='lines', line=dict(color='black'), showlegend=False))
 
-if st.checkbox('Show Robot suggestion'):
-    # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
-    next_optimal = compute_and_apply_robot_suggestion()
-    fig.add_scatter(x=[next_optimal[1]], y=[next_optimal[0]], mode='markers',
-                    marker=dict(color='black', size=10, symbol='cross'),
-                    name='Robot suggestion')
+
 
 
 
 path_rows, path_cols = zip(*(st.session_state['path']))
 fig.add_trace(go.Scatter(x=path_cols, y=path_rows, mode='lines',
                          line=dict(color='red', width=4), showlegend=False))
+
+x_values = list(ind*10 for ind in range(1,7))
+x_labels = list(f"{x*10} m" for x in x_values)
+fig.update_xaxes(
+    tickvals=x_values,
+    ticktext=x_labels,
+    title_text='VS'
+)
+y_values = list(ind*10 for ind in range(1,7))
+y_labels = list(f"x{300+int(x/2)} m" for x in x_values)
+fig.update_yaxes(
+    tickvals=y_values,
+    ticktext=y_labels,
+    title_text='TVD'
+)
+
+cur_location = st.session_state['path'][-1]
+fig.write_image(f"figures/output_{int(cur_location[1])}_{int(cur_location[0])}.png")
 
 st.plotly_chart(fig, use_container_width=True)
 
