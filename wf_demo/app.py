@@ -148,6 +148,17 @@ fig.update_layout(coloraxis_colorbar=dict(
 fig.add_scatter(x=[start_position[1]], y=[start_position[0]], mode='markers', marker=dict(color='red', size=10),
                 name='Start Position')
 
+if st.checkbox('Cheat!'):
+    # true_gan_output, facies_output = get_gan_truth(true_sim.latent_synthetic_truth)
+    true_gan_output = true_sim.simulator.NNmodel.eval_gan(true_sim.latent_synthetic_truth)
+    print(f"The output {true_gan_output}")
+    print(f"Output shape {true_gan_output.shape}")
+    np_gan_output = true_gan_output.cpu().numpy()
+    print(f"The output {np_gan_output}")
+    print(f"Output shape {np_gan_output.shape}")
+    # todo improve from the hard-coded constants, see get_gan_...
+    fig = px.imshow(1.*np_gan_output[0,1,:,:]+0.5*np_gan_output[0,2,:,:], aspect='auto', color_continuous_scale='viridis')
+
 # st.write(f'The current position of the well is at: {start_position}')
 
 
@@ -160,16 +171,6 @@ def apply_user_input(user_choice: str = None):
         next_position = (start_position[0] + 1, start_position[1] + 1)
     return next_position
 
-if st.checkbox('Cheat!'):
-    # true_gan_output, facies_output = get_gan_truth(true_sim.latent_synthetic_truth)
-    true_gan_output = true_sim.simulator.NNmodel.eval_gan(true_sim.latent_synthetic_truth)
-    print(f"The output {true_gan_output}")
-    print(f"Output shape {true_gan_output.shape}")
-    np_gan_output = true_gan_output.cpu().numpy()
-    print(f"The output {np_gan_output}")
-    print(f"Output shape {np_gan_output.shape}")
-    # todo improve from the hard-coded constants, see get_gan_...
-    fig = px.imshow(1.*np_gan_output[0,1,:,:]+0.5*np_gan_output[0,2,:,:], aspect='auto', color_continuous_scale='viridis')
 
     #
     #     x = np.array(range(64))
