@@ -161,19 +161,21 @@ def apply_user_input(user_choice: str = None):
     return next_position
 
 if st.checkbox('Cheat!'):
+    # true_gan_output, facies_output = get_gan_truth(true_sim.latent_synthetic_truth)
     true_gan_output = true_sim.simulator.NNmodel.eval_gan(true_sim.latent_synthetic_truth)
     print(f"The output {true_gan_output}")
     print(f"Output shape {true_gan_output.shape}")
     np_gan_output = true_gan_output.cpu().numpy()
     print(f"The output {np_gan_output}")
     print(f"Output shape {np_gan_output.shape}")
-    fig = px.imshow(np_gan_output[0,0,:,:], aspect='auto', color_continuous_scale='viridis')
+    # todo improve from the hard-coded constants, see get_gan_...
+    fig = px.imshow(1.*np_gan_output[0,1,:,:]+0.5*np_gan_output[0,2,:,:], aspect='auto', color_continuous_scale='viridis')
 
     #
     #     x = np.array(range(64))
     #     y = np.array(range(64))
     #     X, Y = np.meshgrid(x, y)
-    #     Z = true_facies[0, :, :]
+    #     Z = np_gan_output[0,0,:,:]
     #     fig.add_trace(go.Contour(z=Z, x=x, y=y, contours=dict(
     #         start=-1,
     #         end=1,
