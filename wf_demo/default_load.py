@@ -18,10 +18,14 @@ input_dict = {
                  ('24kHz','43ft'),('48kHz','43ft'),('96kHz','43ft')]
     }
 
-def load_default_latent_tensor():
+def load_default_latent_tensor(realization_id: str ="C1"):
     # my_latent_vec_np = np.random.normal(size=60)
-    numpy_input = np.load("../chosen_realization_C1.npz")
+    numpy_input = np.load(f"../chosen_realization_{realization_id}.npz")
     my_latent_vec_np = numpy_input['arr_0']
     # my_latent_vec_np = np.random.uniform(low=0.1, high=0.2, size=60)
     my_latent_tensor = torch.tensor(my_latent_vec_np, dtype=torch.float32).unsqueeze(0)
     return my_latent_tensor
+
+def load_default_starting_ensemble_state():
+    state = np.load('../orig_prior_2024.npz')['m'][:,:]
+    return state

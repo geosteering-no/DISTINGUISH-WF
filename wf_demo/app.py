@@ -26,7 +26,7 @@ import matplotlib
 from copy import deepcopy as dp
 import time
 
-from wf_demo.default_load import input_dict, load_default_latent_tensor
+from wf_demo.default_load import input_dict, load_default_latent_tensor, load_default_starting_ensemble_state
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -59,7 +59,7 @@ true_sim = SyntheticTruth(latent_truth_vector=load_default_latent_tensor().to(de
 # Show a slider first to select the start position of the well
 if st.session_state.first_position:
     # state = np.load('../orig_prior_small.npz')['x']  # the prior latent vector
-    state = np.load('../orig_prior_2024.npz')['m'][:,:]
+    state = load_default_starting_ensemble_state()
     # the commented code loads the truth as the state for checking correctness
     # state_torch = load_default_latent_tensor().cpu()
     # state = state_torch.permute(1,0).numpy()
@@ -171,36 +171,6 @@ def apply_user_input(user_choice: str = None):
     else:
         next_position = (start_position[0] + 1, start_position[1] + 1)
     return next_position
-
-if st.checkbox('Cheat!'):
-    # true_gan_output, facies_output = get_gan_truth(true_sim.latent_synthetic_truth)
-    true_gan_output = true_sim.simulator.NNmodel.eval_gan(true_sim.latent_synthetic_truth)
-    print(f"The output {true_gan_output}")
-    print(f"Output shape {true_gan_output.shape}")
-    np_gan_output = true_gan_output.cpu().numpy()
-    print(f"The output {np_gan_output}")
-    print(f"Output shape {np_gan_output.shape}")
-    # todo improve from the hard-coded constants, see get_gan_...
-    fig = px.imshow(1.*np_gan_output[0,1,:,:]+0.5*np_gan_output[0,2,:,:], aspect='auto', color_continuous_scale='viridis')
-
-    #
-    #     x = np.array(range(64))
-    #     y = np.array(range(64))
-    #     X, Y = np.meshgrid(x, y)
-    #     Z = np_gan_output[0,0,:,:]
-    #     fig.add_trace(go.Contour(z=Z, x=x, y=y, contours=dict(
-    #         start=-1,
-    #         end=1,
-    #         size=1.9,
-    #         coloring='none'
-    #     ),
-    #                              line=dict(
-    #                                  width=2,
-    #                                  color='white',
-    #                                  dash='dash'
-    #                              ),
-    #                              showscale=False  # Hide the color scale for the contour
-    #                              ))
 
 flags_string = ""
 
