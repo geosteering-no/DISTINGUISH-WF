@@ -2,50 +2,10 @@ import numpy as np
 import sys, os
 import matplotlib
 import matplotlib.pyplot as plt
-from input_output import read_config
-from GAN import GanLog
-home = os.path.expanduser("~") # os independent home
 
-# local load of additional modules.
-sys.path.append(os.path.join(home,'OneDrive/DISTINGUISH/ECMOR_study/deep-borehole-inverse-problem/KERNEL'))
-sys.path.append(os.path.join(home,'OneDrive/DISTINGUISH/ECMOR_study/deep-borehole-inverse-problem/USER_SERGEY'))
-sys.path.append(os.path.join(home,'OneDrive/DISTINGUISH/ECMOR_study/gan-geosteering'))
-import mcwd_converter
-from vector_to_image import GanEvaluator
-from run_model_clean import DnnEvaluatorMcwd
-from resitivity import get_resistivity_default
-import warnings
-# Ignore FutureWarning and UserWarning
-warnings.filterwarnings(action='ignore', category=FutureWarning)
-warnings.filterwarnings(action='ignore', category=UserWarning)
-
-kd, kf = read_config.read_txt('enkf_test.pipt')
-sim = GanLog(kf)
 
 global_extent = [0, 640, -16.25, 15.75]
 
-
-def get_true():
-    numpy_input = np.load('../gan-geosteering/saves/chosen_realization_C1.npz')
-    numpy_single = numpy_input['arr_0']
-    m_true = numpy_single.copy()
-    return m_true
-
-
-def get_prior():
-    prior_mean = np.load('data/mean_field.npz', allow_pickle=True)['arr_0']
-    np.random.seed(0)
-    # m_prior = np.dot(prior_mean[:, np.newaxis], np.ones((1, 500))) + np.dot(np.linalg.cholesky(0.6 * np.eye(60)),
-    #                                                                         np.random.randn(60, 500))
-    # m_prior = np.dot(np.linalg.cholesky(0.6 * np.eye(60)), np.random.randn(60, 500))
-    m_prior = np.dot(prior_mean[:, np.newaxis], np.ones((1, 500))) \
-              + np.dot(np.linalg.cholesky(1.0 * np.eye(60)), np.random.randn(60, 500))
-    return m_prior
-
-
-def get_posterior(filename='final.npz'):
-    post_save = np.load(filename, allow_pickle=True)['m']
-    return post_save
 
 def get_debug_analysis(filename='debug_analysis_step_1.npz'):
     return np.load(filename, allow_pickle=True)['state'][()]['m']
