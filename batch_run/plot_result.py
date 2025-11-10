@@ -34,14 +34,31 @@ import os,sys
 #
 
 
-ne = 250
+# ne = 250
+
+# todo think of how to smartly link this to global extent
+def convert_path_to_np_arrays(path,
+                              offset_x=5,
+                              offset_y=16.,
+                              mult_x=10.0,
+                              mult_y=-0.5,
+                              add_noise=0.0):
+    np_shape = len(path)
+    x = np.zeros(np_shape)
+    y = np.zeros(np_shape)
+    for i, point in enumerate(path):
+        x[i] = point[1]*mult_x+offset_x
+        y[i] = point[0]*mult_y + offset_y + np.random.uniform(-add_noise, add_noise)
+    return x, y
 
 
-def plot_results_one_step(ensemble_vectors,
-                          true_res_image=None,
-                          drilled_path=None,
-                          optimal_path=None,
+
+def plot_results_one_step(true_facies_image=None,
+                          ensemble_facies_images=None,
                           full_nn_model=None,
+                          drilled_path=None,
+                          true_optimal_path=None,
+                          next_optimal_recommendation=None,
                           all_paths=None,
                           save_file_flags: str = ""):
     # todo fix plotting given the simulated features
@@ -60,24 +77,48 @@ def plot_results_one_step(ensemble_vectors,
     # Create the plot
     fig_res, ax_res = plt.subplots(figsize=(12, 5))
     # Use the 'viridis' colormap
-    res_im = ax_res.imshow(true_res_image, aspect='auto', cmap='summer', vmin=1, vmax=200)
+
+    # res_im = ax_res.imshow(true_res_image, aspect='auto', cmap='summer', vmin=1, vmax=200)
+    res_im = ax_res.imshow(true_facies_image,
+                           aspect='auto',
+                           cmap='summer',
+                           extent=global_extent)
     cbar = plt.colorbar(res_im, ax=ax_res)
-    em_model_for_overlay_plotting_step = 19
-    # plt.show()
 
-    # Define the origin
-    labelled_index = 0
-    origin_x = 0
-    origin_y = 32
-    # drilled_path = [np.array([origin_y, origin_x])]
+    # this plots already drilled path
+    # todo plot
 
+    # this plots true best path
+    true_path_x, true_path_y = convert_path_to_np_arrays(true_optimal_path)
+    ax_res.plot(true_path_x, true_path_y,
+                linestyle='None',
+                marker='o',
+                color='gray',
+                markersize=3)
 
+    # this plots next optimal
+    next_opt_x, next_opt_y = convert_path_to_np_arrays([drilled_path[-1],
+                                                        next_optimal_recommendation])
+    ax_res.plot(next_opt_x, next_opt_y,
+                linestyle='--',
+                marker='*',
+                color='black',
+                markersize=3)
+
+    for path in all_paths:
+        path_x, path_y = convert_path_to_np_arrays(path, add_noise=0.1)
+        ax_res.plot(path_x, path_y,
+                    color='black',
+                    linewidth=0.2)
+
+    plt.show()
 
     # Load the decision points
     state_vectors = ensemble_vectors
-    start_position_at_step = drilled_path[-1]
 
     gan_evaluator = full_nn_model.gan_evaluator
+
+
 
     post_earth = np.array(
         [create_weighted_image(evaluate_earth_model(gan_evaluator, state_vectors[:, el])) for el in
