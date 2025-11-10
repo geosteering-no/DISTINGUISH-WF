@@ -4,7 +4,12 @@ import torch
 weights_folder = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/em/{}.pth?ref_type=heads"
 scalers_folder = weights_folder
 full_em_model_file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/em/checkpoint_770.pth?ref_type=heads"
+proxi_input_shape = (3,128)
+proxi_output_shape = (6, 18)
+gan_input_dim = 60
 gan_file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/gan/netG_epoch_4662.safetensors"
+gan_output_height = 64
+gan_num_channals = 6
 
 input_dict = {
     'file_name': gan_file_name,

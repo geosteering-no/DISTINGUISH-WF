@@ -5,6 +5,9 @@ import matplotlib
 from scipy.interpolate import make_interp_spline
 
 
+from pathoptim.pathOPTIM import pathfinder
+from pathoptim.DP import create_weighted_image, evaluate_earth_model
+
 
 import os,sys
 
@@ -35,13 +38,13 @@ ne = 250
 
 
 def plot_results_one_step(ensemble_vectors,
-                          true_vector,
-                          true_res_image,
-                          drilled_path,
-                          optimal_path,
-                          full_nn_model,
+                          true_res_image=None,
+                          drilled_path=None,
+                          optimal_path=None,
+                          full_nn_model=None,
                           all_paths=None,
                           save_file_flags: str = ""):
+    # todo fix plotting given the simulated features
     global_extent = [0, 640, -16.25, 15.75]
 
     # we need to switch to TkAgg to show GUI, something switches it to something else
@@ -74,6 +77,7 @@ def plot_results_one_step(ensemble_vectors,
     state_vectors = ensemble_vectors
     start_position_at_step = drilled_path[-1]
 
+    gan_evaluator = full_nn_model.gan_evaluator
 
     post_earth = np.array(
         [create_weighted_image(evaluate_earth_model(gan_evaluator, state_vectors[:, el])) for el in
