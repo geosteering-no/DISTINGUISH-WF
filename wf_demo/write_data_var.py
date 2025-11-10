@@ -15,6 +15,7 @@ class SyntheticTruth:
         else:
             self.device = device
 
+        # todo make this simulator with less stuff included
         # this is simulator of the true data
         self.simulator = GeoSim(input_dict)
 
