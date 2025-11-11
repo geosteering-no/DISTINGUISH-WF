@@ -38,7 +38,7 @@ import os,sys
 
 # todo think of how to smartly link this to global extent
 def convert_path_to_np_arrays(path,
-                              offset_x=5,
+                              offset_x=0,
                               offset_y=15.5,
                               mult_x=10.0,
                               mult_y=-0.5,
@@ -64,7 +64,7 @@ def plot_results_one_step(true_facies_image=None,
                           all_paths=None,
                           save_file_flags: str = ""):
     # todo fix plotting given the simulated features
-    global_extent = [0, 640, -16.25, 15.75]
+    global_extent = [-5, 640-5, -16.25, 15.75]
 
     # we need to switch to TkAgg to show GUI, something switches it to something else
     # matplotlib.use('TkAgg')
