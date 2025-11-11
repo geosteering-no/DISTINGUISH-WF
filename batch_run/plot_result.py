@@ -39,7 +39,7 @@ import os,sys
 # todo think of how to smartly link this to global extent
 def convert_path_to_np_arrays(path,
                               offset_x=5,
-                              offset_y=16.,
+                              offset_y=15.5,
                               mult_x=10.0,
                               mult_y=-0.5,
                               add_noise=0.0):
