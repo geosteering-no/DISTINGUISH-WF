@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 import time
 import torch
+import os
+import random
+
 
 # Suppress FutureWarnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -29,6 +32,30 @@ from NeuralSim.vector_to_log import FullModel
 # global_extent = [0, 640, -16.25, 15.75]
 # norm = Normalize(vmin=0.0, vmax=1)
 
+
+
+def fix_seed(seed: int = 0) -> None:
+    # 1) Python
+    random.seed(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
+
+    # 2) NumPy
+    np.random.seed(seed)
+
+    # 3) PyTorch (CPU)
+    torch.manual_seed(seed)
+
+    # 4) PyTorch CUDA
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)  # multi-GPU
+
+    # 5) cuDNN / deterministic behavior
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+    # Optional but stronger: error out on non-deterministic ops (PyTorch ≥1.8)
+    torch.use_deterministic_algorithms(True)
 
 
 def da(state, start_position, input_dict):
@@ -177,5 +204,6 @@ def batch_run(starting_position=(32,0), true_realization_id="C1"):
 
 
 if __name__ == "__main__":
+    fix_seed(0)
     # todo add parameters according to the tests
     batch_run()
