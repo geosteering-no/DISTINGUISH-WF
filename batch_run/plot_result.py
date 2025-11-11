@@ -54,7 +54,9 @@ def convert_path_to_np_arrays(path,
 
 
 def plot_results_one_step(true_facies_image=None,
+                          true_value_image=None,
                           ensemble_facies_images=None,
+                          value_images=None,
                           full_nn_model=None,
                           drilled_path=None,
                           true_optimal_path=None,
@@ -79,11 +81,33 @@ def plot_results_one_step(true_facies_image=None,
     # Use the 'viridis' colormap
 
     # res_im = ax_res.imshow(true_res_image, aspect='auto', cmap='summer', vmin=1, vmax=200)
-    res_im = ax_res.imshow(true_facies_image,
+    res_im = ax_res.imshow((true_facies_image+1.)/2.,
                            aspect='auto',
                            cmap='summer',
                            extent=global_extent)
     cbar = plt.colorbar(res_im, ax=ax_res)
+
+    ensemble_facies_model_mean = ensemble_facies_images.mean(axis=0)
+
+    prob_im = ax_res.imshow(ensemble_facies_model_mean,
+                               aspect='auto',
+                               cmap='summer',
+                               extent=global_extent)
+
+
+    # moving to line elements of the plot
+    xmin, xmax, ymin, ymax = global_extent
+    ny, nx = true_facies_image.shape  # imshow: (ny, nx)
+
+    x = np.linspace(xmin, xmax, nx)
+    y = np.linspace(ymax, ymin, ny) # origin=lower
+
+    cs = ax_res.contour(x, y,
+                        true_facies_image,
+                        levels=[0.5],
+                        colors="white",
+                        linestyles="dashed",
+                        linewidths=1)
 
     # this plots already drilled path
     # todo plot
@@ -95,6 +119,8 @@ def plot_results_one_step(true_facies_image=None,
                 marker='o',
                 color='gray',
                 markersize=3)
+
+
 
     # this plots next optimal
     next_opt_x, next_opt_y = convert_path_to_np_arrays([drilled_path[-1],
@@ -113,8 +139,9 @@ def plot_results_one_step(true_facies_image=None,
 
     plt.show()
 
+
     # Load the decision points
-    state_vectors = ensemble_vectors
+
 
     gan_evaluator = full_nn_model.gan_evaluator
 

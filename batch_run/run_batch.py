@@ -146,16 +146,16 @@ def batch_run(starting_position=(32,0), true_realization_id="C1"):
     path = [start_position]
 
     # this gives a binary image with shale
-    true_res_model_np = true_facies_image.to("cpu").numpy()[0, 0, :, :]
+    true_facies_model_np = true_facies_image.to("cpu").numpy()[0, 0, :, :]
 
     # transform to facies
-    pri_earth = geosim_ensemble.gan_evaluator.eval(ensemble_state_torch,
+    pri_facies_earth = geosim_ensemble.gan_evaluator.eval(ensemble_state_torch,
                                                    no_grad=True)
     # calculate objective functions
     # truth
     true_values = evaluate_earth_model_ensemble(true_facies_image)
     # ensenble
-    ensemble_values = evaluate_earth_model_ensemble(pri_earth)
+    ensemble_values = evaluate_earth_model_ensemble(pri_facies_earth)
 
     pathfinder_obj = pathfinder()
 
@@ -174,16 +174,14 @@ def batch_run(starting_position=(32,0), true_realization_id="C1"):
                                                     recompute_optimal_paths_from_next=True
                                                     )
 
-
-
-    # evaluate_earth_model(gan_evaluator, state_vectors[:, el])) for el in
-    #      range(ne)])  # range(state.shape[1])])
-
-    pri_earth_np = ensemble_state_torch.to("cpu").numpy()
+    ensemble_facies_truncated = torch.where(pri_facies_earth >= 0,
+                                            torch.tensor(1, dtype=pri_facies_earth.dtype),
+                                            torch.tensor(0, dtype=pri_facies_earth.dtype))
+    ensemble_facies_model_np = ensemble_facies_truncated.to("cpu").numpy()[:, 0, :, :]
 
     # pre-job plotting
-    plot_results_one_step(ensemble_facies_images=pri_earth_np,
-                          true_facies_image=true_res_model_np,
+    plot_results_one_step(ensemble_facies_images=ensemble_facies_model_np,
+                          true_facies_image=true_facies_model_np,
                           drilled_path=path,
                           true_optimal_path=true_paths[0],
                           next_optimal_recommendation=next_optimal,
