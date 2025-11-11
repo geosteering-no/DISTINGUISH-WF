@@ -101,41 +101,13 @@ def compute_and_apply_robot_suggestion(state, start_position, true_gan_sim):
     return next_optimal
 
 
-def batch_run(starting_position=(32,0), true_realization_id="C1"):
+def batch_run(starting_position=(31,0), true_realization_id="C1", seed=0):
 
-    # todo fix seed
+    fix_seed(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # get truth
     synthetic_truth_vector = load_default_latent_tensor(true_realization_id).to(device)
-
-    # setting simulators
-    true_sim = FullModel(latent_size=gan_input_dim,
-                                gan_save_file=gan_file_name,
-                                proxi_save_file=full_em_model_file_name,
-                                proxi_scalers=scalers_folder,
-                                proxi_input_shape=proxi_input_shape,
-                                proxi_output_shape=proxi_output_shape,
-                                gan_output_height=gan_output_height,
-                                num_img_channels=gan_num_channals,
-                                gan_correct_orientation=False,
-                                device=device
-                                )
-    geosim_ensemble = FullModel(latent_size=gan_input_dim,
-                                gan_save_file=gan_file_name,
-                                proxi_save_file=full_em_model_file_name,
-                                proxi_scalers=scalers_folder,
-                                proxi_input_shape=proxi_input_shape,
-                                proxi_output_shape=proxi_output_shape,
-                                gan_output_height=gan_output_height,
-                                num_img_channels=gan_num_channals,
-                                gan_correct_orientation=False,
-                                device=device
-                                )
-
-
-    true_facies_image = true_sim.gan_evaluator.eval(synthetic_truth_vector,
-                                                    no_grad=True)
 
     # get intitial state
     ensemble_state = load_default_starting_ensemble_state()
@@ -145,63 +117,93 @@ def batch_run(starting_position=(32,0), true_realization_id="C1"):
     start_position = starting_position
     path = [start_position]
 
-    # this gives a binary image with shale
-    true_facies_model_np = true_facies_image.to("cpu").numpy()[0, 0, :, :]
+    for i in range(64):
+        # setting simulators
+        true_sim = FullModel(latent_size=gan_input_dim,
+                                    gan_save_file=gan_file_name,
+                                    proxi_save_file=full_em_model_file_name,
+                                    proxi_scalers=scalers_folder,
+                                    proxi_input_shape=proxi_input_shape,
+                                    proxi_output_shape=proxi_output_shape,
+                                    gan_output_height=gan_output_height,
+                                    num_img_channels=gan_num_channals,
+                                    gan_correct_orientation=False,
+                                    device=device
+                                    )
+        geosim_ensemble = FullModel(latent_size=gan_input_dim,
+                                    gan_save_file=gan_file_name,
+                                    proxi_save_file=full_em_model_file_name,
+                                    proxi_scalers=scalers_folder,
+                                    proxi_input_shape=proxi_input_shape,
+                                    proxi_output_shape=proxi_output_shape,
+                                    gan_output_height=gan_output_height,
+                                    num_img_channels=gan_num_channals,
+                                    gan_correct_orientation=False,
+                                    device=device
+                                    )
 
-    # transform to facies
-    pri_facies_earth = geosim_ensemble.gan_evaluator.eval(ensemble_state_torch,
-                                                   no_grad=True)
-    # calculate objective functions
-    # truth
-    true_values = evaluate_earth_model_ensemble(true_facies_image)
-    # ensenble
-    ensemble_values = evaluate_earth_model_ensemble(pri_facies_earth)
-
-    pathfinder_obj = pathfinder()
-
-    # Cheat! Compute true optimal path
-    true_next_optimal, true_paths = pathfinder_obj.no_gan_run(weighted_images=true_values,
-                                                    start_point=start_position,
-                                                    discount_for_remainder=1.0, # keep 1.0 for truth!
-                                                    recompute_optimal_paths_from_next=False
-                                                    )
-
-
-    # compute paths
-    next_optimal, paths = pathfinder_obj.no_gan_run(weighted_images=ensemble_values,
-                                                    start_point=start_position,
-                                                    discount_for_remainder=1.0,
-                                                    recompute_optimal_paths_from_next=True
-                                                    )
-
-    ensemble_facies_truncated = torch.where(pri_facies_earth >= 0,
-                                            torch.tensor(1, dtype=pri_facies_earth.dtype),
-                                            torch.tensor(0, dtype=pri_facies_earth.dtype))
-    ensemble_facies_model_np = ensemble_facies_truncated.to("cpu").numpy()[:, 0, :, :]
-
-    # pre-job plotting
-    plot_results_one_step(ensemble_facies_images=ensemble_facies_model_np,
-                          true_facies_image=true_facies_model_np,
-                          drilled_path=path,
-                          true_optimal_path=true_paths[0],
-                          next_optimal_recommendation=next_optimal,
-                          all_paths=paths,
-                          full_nn_model=geosim_ensemble,
-                          )
+        # create an image
+        true_facies_image = true_sim.gan_evaluator.eval(synthetic_truth_vector,
+                                                        no_grad=True)
 
 
+        # this gives a binary image with shale
+        true_facies_model_np = true_facies_image.to("cpu").numpy()[0, 0, :, :]
 
-    # todo change the steps
-    for i in range(1, 10):
-        next_optimal = compute_and_apply_robot_suggestion(ensemble_state,
-                                                          start_position,
-                                                          true_sim.simulator.NNmodel.gan_evaluator)
-        path.append(next_optimal)
-        start_position = next_optimal
-        ensemble_state = da(ensemble_state, next_optimal, input_dict=input_dict)
+        # transform to facies
+        pri_facies_earth = geosim_ensemble.gan_evaluator.eval(ensemble_state_torch,
+                                                       no_grad=True)
+        # calculate objective functions
+        # truth
+        true_values = evaluate_earth_model_ensemble(true_facies_image)
+        # ensenble
+        ensemble_values = evaluate_earth_model_ensemble(pri_facies_earth)
+
+        pathfinder_obj = pathfinder()
+
+        # Cheat! Compute true optimal path
+        true_next_optimal, true_paths = pathfinder_obj.no_gan_run(weighted_images=true_values,
+                                                        start_point=start_position,
+                                                        discount_for_remainder=1.0, # keep 1.0 for truth!
+                                                        recompute_optimal_paths_from_next=False
+                                                        )
+
+
+        # compute paths
+        next_optimal, paths = pathfinder_obj.no_gan_run(weighted_images=ensemble_values,
+                                                        start_point=start_position,
+                                                        discount_for_remainder=1.0,
+                                                        recompute_optimal_paths_from_next=True
+                                                        )
+
+        ensemble_facies_truncated = torch.where(pri_facies_earth >= 0,
+                                                torch.tensor(1, dtype=pri_facies_earth.dtype),
+                                                torch.tensor(0, dtype=pri_facies_earth.dtype))
+        ensemble_facies_model_np = ensemble_facies_truncated.to("cpu").numpy()[:, 0, :, :]
+
+        # pre-job plotting
+        plot_results_one_step(ensemble_facies_images=ensemble_facies_model_np,
+                              true_facies_image=true_facies_model_np,
+                              drilled_path=path,
+                              true_optimal_path=true_paths[0],
+                              next_optimal_recommendation=next_optimal,
+                              all_paths=paths,
+                              full_nn_model=geosim_ensemble,
+                              )
+
+
+
+    # # todo change the steps
+    # for i in range(1, 10):
+    #     next_optimal = compute_and_apply_robot_suggestion(ensemble_state,
+    #                                                       start_position,
+    #                                                       true_sim.simulator.NNmodel.gan_evaluator)
+    #     path.append(next_optimal)
+    #     start_position = next_optimal
+    #     ensemble_state = da(ensemble_state, next_optimal, input_dict=input_dict)
 
 
 if __name__ == "__main__":
-    fix_seed(0)
     # todo add parameters according to the tests
-    batch_run()
+    batch_run(seed=7)
+    batch_run(starting_position=(54,0), seed=54)
