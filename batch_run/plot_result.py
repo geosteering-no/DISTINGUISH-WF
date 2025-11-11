@@ -1,7 +1,9 @@
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 import matplotlib
+from matplotlib.ticker import FuncFormatter
 from scipy.interpolate import make_interp_spline
 
 
@@ -10,6 +12,17 @@ from pathoptim.DP import create_weighted_image, evaluate_earth_model
 
 
 import os,sys
+
+# global font sizes for the whole script
+mpl.rcParams.update({
+    "font.size": 18,         # base font
+    "axes.titlesize": 20,
+    "axes.labelsize": 18,
+    "xtick.labelsize": 16,
+    "ytick.labelsize": 16,
+    "legend.fontsize": 16,
+    "figure.titlesize": 22,
+})
 
 # home = os.path.expanduser("~") # os independent home
 #
@@ -52,6 +65,9 @@ def convert_path_to_np_arrays(path,
     return x, y
 
 
+def fmt_depth(tick, pos):
+    return f"x{100-int(tick)}"   # or int(tick * 100) if your data is 0–1
+
 
 def plot_results_one_step(true_facies_image=None,
                           true_value_image=None,
@@ -80,19 +96,22 @@ def plot_results_one_step(true_facies_image=None,
     fig_res, ax_res = plt.subplots(figsize=(12, 5))
     # Use the 'viridis' colormap
 
-    # res_im = ax_res.imshow(true_res_image, aspect='auto', cmap='summer', vmin=1, vmax=200)
-    res_im = ax_res.imshow((true_facies_image+1.)/2.,
-                           aspect='auto',
-                           cmap='summer',
-                           extent=global_extent)
-    cbar = plt.colorbar(res_im, ax=ax_res)
+    # # res_im = ax_res.imshow(true_res_image, aspect='auto', cmap='summer', vmin=1, vmax=200)
+    # res_im = ax_res.imshow(-(true_facies_image-1.)/2.,
+    #                        aspect='auto',
+    #                        cmap='tab20b',
+    #                        extent=global_extent)
+    # cbar = plt.colorbar(res_im, ax=ax_res)
 
     ensemble_facies_model_mean = ensemble_facies_images.mean(axis=0)
 
     prob_im = ax_res.imshow(ensemble_facies_model_mean,
                                aspect='auto',
-                               cmap='summer',
+                               cmap='tab20b',
+                                vmin=0,   # lower bound of color scale
+                                vmax=1,    # upper bound of color scale
                                extent=global_extent)
+    cbar = plt.colorbar(prob_im, ax=ax_res)
 
 
     # moving to line elements of the plot
@@ -136,6 +155,10 @@ def plot_results_one_step(true_facies_image=None,
         ax_res.plot(path_x, path_y,
                     color='black',
                     linewidth=0.2)
+
+    # ticks at -10, -5, 0, 5, 10
+    ax_res.set_yticks(np.arange(-10, 11, 5))
+    ax_res.yaxis.set_major_formatter(FuncFormatter(fmt_depth))
 
     plt.show()
 

@@ -101,7 +101,7 @@ def compute_and_apply_robot_suggestion(state, start_position, true_gan_sim):
     return next_optimal
 
 
-def batch_run(starting_position=(31,0), true_realization_id="C1", seed=0):
+def batch_run(starting_position=(31,0), true_realization_id="C1", seed=0, discount_factor=1.0):
 
     fix_seed(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -177,8 +177,8 @@ def batch_run(starting_position=(31,0), true_realization_id="C1", seed=0):
                                                         )
 
         ensemble_facies_truncated = torch.where(pri_facies_earth >= 0,
-                                                torch.tensor(1, dtype=pri_facies_earth.dtype),
-                                                torch.tensor(0, dtype=pri_facies_earth.dtype))
+                                                torch.tensor(0, dtype=pri_facies_earth.dtype),
+                                                torch.tensor(1, dtype=pri_facies_earth.dtype))
         ensemble_facies_model_np = ensemble_facies_truncated.to("cpu").numpy()[:, 0, :, :]
 
         # pre-job plotting
@@ -206,4 +206,5 @@ def batch_run(starting_position=(31,0), true_realization_id="C1", seed=0):
 if __name__ == "__main__":
     # todo add parameters according to the tests
     batch_run(seed=7)
+    # example where we need to target lower sequence
     batch_run(starting_position=(54,0), seed=54)
