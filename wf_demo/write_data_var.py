@@ -28,12 +28,23 @@ class SyntheticTruth:
 
 
     def acquire_data(self, keys):
-
-        index_vector = torch.full((1, keys['bit_pos'][0][1]), fill_value=keys['bit_pos'][0][0],
-                                  dtype=torch.long).to(self.device)
+        # todo fix empty index vector
+        # this is the old index vector size:
+        print(f"size=(1, keys['bit_pos'][0][1]) {(1, keys['bit_pos'][0][1])}")
+        print(f"fill_value=keys['bit_pos'][0][0] {keys['bit_pos'][0][0]}")
+        # the size of the index vector per our convention should cover up to bit_pos [1]
+        # this means that it should be position plus one
+        # todo we need to update the convension in the simulator
+        index_vector = torch.full(size=(1, keys['bit_pos'][0][1]+1),
+                                  fill_value=keys['bit_pos'][0][0],
+                                  dtype=torch.long
+                                  ).to(self.device)
 
         logs = self.simulator.NNmodel.forward(self.latent_synthetic_truth, index_vector, output_transien_results=False)
-        logs_np = logs.cpu().detach().numpy()[keys['bit_pos'][0][1]-1,:,-8:]
+
+        # here we need to use the bit_pos (but was bit_pos-1)
+        logs_np = logs.cpu().detach().numpy()[keys['bit_pos'][0][1],:,-8:]
+        # todo describe which logs are used in the paper
 
         # bookkeeping
         k = open('../data/assim_index.csv', 'w', newline='')
