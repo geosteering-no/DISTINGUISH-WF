@@ -80,7 +80,8 @@ def plot_results_one_step(true_facies_image=None,
                           true_optimal_path=None,
                           next_optimal_recommendation=None,
                           all_paths=None,
-                          save_file_flags: str = ""):
+                          save_file_flags: str = "",
+                          stop_to_show_plots=False):
     # todo fix plotting given the simulated features
     global_extent = [-5, 640-5, -16.25, 15.75]
 
@@ -164,7 +165,8 @@ def plot_results_one_step(true_facies_image=None,
 
     plt.savefig(f"{save_folder}/{drilled_path[-1][1]}_{save_file_flags}.pdf", bbox_inches="tight")
     plt.savefig(f"{save_folder}/{drilled_path[-1][1]}_{save_file_flags}.png", dpi=300, bbox_inches="tight")
-    plt.show()
+    if stop_to_show_plots:
+        plt.show()
 
     #
     # # Load the decision points
