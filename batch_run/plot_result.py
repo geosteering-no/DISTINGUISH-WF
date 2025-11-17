@@ -24,6 +24,8 @@ mpl.rcParams.update({
     "figure.titlesize": 22,
 })
 
+
+save_folder = "figures"
 # home = os.path.expanduser("~") # os independent home
 #
 #
@@ -160,7 +162,9 @@ def plot_results_one_step(true_facies_image=None,
     ax_res.set_yticks(np.arange(-10, 11, 5))
     ax_res.yaxis.set_major_formatter(FuncFormatter(fmt_depth))
 
-    # plt.show()
+    plt.savefig(f"{save_folder}/{drilled_path[-1][1]}_{save_file_flags}.pdf", bbox_inches="tight")
+    plt.savefig(f"{save_folder}/{drilled_path[-1][1]}_{save_file_flags}.png", dpi=300, bbox_inches="tight")
+    plt.show()
 
     #
     # # Load the decision points
