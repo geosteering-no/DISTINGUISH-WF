@@ -132,7 +132,11 @@ def plot_results_one_step(true_facies_image=None,
                         linewidths=1)
 
     # this plots already drilled path
-    # todo plot
+    drilled_path_x, drilled_path_y = convert_path_to_np_arrays(drilled_path)
+    ax_res.plot(drilled_path_x, drilled_path_y,
+                color='black',
+                linewidth=2)
+
 
     # this plots true best path
     true_path_x, true_path_y = convert_path_to_np_arrays(true_optimal_path)
