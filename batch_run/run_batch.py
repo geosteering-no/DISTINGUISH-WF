@@ -117,7 +117,7 @@ def batch_run(starting_position=(31,0), true_realization_id="C1", seed=0, discou
 
     # get intitial state
     ensemble_state = load_default_starting_ensemble_state()
-    ensemble_state_torch = torch.tensor(ensemble_state.T, dtype=torch.float32, device=device)
+    prior_state_torch = torch.tensor(ensemble_state.T, dtype=torch.float32, device=device)
 
     # setting simulators
     # this simulator is for data assimilation and should perhaps be optimized
@@ -176,7 +176,7 @@ def batch_run(starting_position=(31,0), true_realization_id="C1", seed=0, discou
 
     # pre-job mapping and plotting
     # transform to facies
-    pri_facies_earth = geosim_ensemble.gan_evaluator.eval(ensemble_state_torch,
+    pri_facies_earth = geosim_ensemble.gan_evaluator.eval(prior_state_torch,
                                                           no_grad=True)
 
     # ensenble
@@ -204,13 +204,14 @@ def batch_run(starting_position=(31,0), true_realization_id="C1", seed=0, discou
                           full_nn_model=geosim_ensemble,
                           )
 
-    # loading data assimilation settings
-    da_input_dict = input_dict.copy()
+
 
     for i in range(64):
         # actual run step
         # start with DA
-        post_state_vectors = da(ensemble_state_torch,
+        # loading data assimilation settings
+        da_input_dict = input_dict.copy()
+        post_state_vectors = da(prior_state_torch,
                                 start_position,
                                 da_input_dict,
                                 true_sim_for_da)
@@ -230,9 +231,9 @@ def batch_run(starting_position=(31,0), true_realization_id="C1", seed=0, discou
                                                         recompute_optimal_paths_from_next=True
                                                         )
 
-        ensemble_facies_truncated = torch.where(pri_facies_earth >= 0,
-                                                torch.tensor(0, dtype=pri_facies_earth.dtype),
-                                                torch.tensor(1, dtype=pri_facies_earth.dtype))
+        ensemble_facies_truncated = torch.where(post_facies_earth >= 0,
+                                                torch.tensor(0, dtype=post_facies_earth.dtype),
+                                                torch.tensor(1, dtype=post_facies_earth.dtype))
         ensemble_facies_model_np = ensemble_facies_truncated.to("cpu").numpy()[:, 0, :, :]
 
         # pre-job plotting
@@ -244,6 +245,13 @@ def batch_run(starting_position=(31,0), true_realization_id="C1", seed=0, discou
                               all_paths=paths,
                               full_nn_model=geosim_ensemble,
                               )
+
+        # moving to the next step
+        path.append(next_optimal)
+        start_position = next_optimal
+        prior_state_torch = post_state_vectors
+
+
 
 
 
@@ -258,7 +266,11 @@ def batch_run(starting_position=(31,0), true_realization_id="C1", seed=0, discou
 
 
 if __name__ == "__main__":
-    # todo add parameters according to the tests
-    batch_run(seed=7)
+    # example where we are in the top sequence
+    batch_run(starting_position=(12,0), seed=42)
+
     # example where we need to target lower sequence
     batch_run(starting_position=(54,0), seed=54)
+    # todo add parameters according to the tests
+    batch_run(seed=7)
+
