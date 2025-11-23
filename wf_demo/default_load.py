@@ -31,6 +31,10 @@ def load_default_latent_tensor(realization_id: str ="C1"):
     my_latent_tensor = torch.tensor(my_latent_vec_np, dtype=torch.float32).unsqueeze(0)
     return my_latent_tensor
 
+def save_realization_latent_tensor(my_latent_tensor, id_str):
+    numpy_vector = my_latent_tensor[0].cpu().numpy()
+    np.savez(f"../chosen_realization_{id_str}.npz", numpy_vector)
+
 def load_default_starting_ensemble_state():
     state = np.load('../orig_prior_2024.npz')['m'][:,:]
     return state
