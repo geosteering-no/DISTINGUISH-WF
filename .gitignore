@@ -229,3 +229,7 @@ batch_run/why_iter_loop_stopped.p
 batch_run/prior_forecast.npz
 
 wf_demo/figures/
+
+data/SynthTruth_updated_*.png
+
+batch_run/figures/
