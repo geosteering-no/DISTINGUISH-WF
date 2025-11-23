@@ -1,3 +1,9 @@
+import os
+os.environ["MPLBACKEND"] = "Agg"  # must be before importing matplotlib
+
+import matplotlib
+matplotlib.use("Agg")
+
 import numpy as np
 import warnings
 
@@ -210,7 +216,7 @@ if st.checkbox('Show Robot paths'):
     # plot the optimal paths in the plotly figure
     for j in range(state.shape[1]):
         path_rows, path_cols = zip(*(optimal_paths[j]))
-        noise_mult = 0.2
+        noise_mult = 0.5
         # noise_mult = 0
         row_list = [el + noise_mult * np.random.randn() for el in path_rows]
         fig.add_trace(
@@ -244,11 +250,14 @@ fig.write_image(f"figures/output_{int(cur_location[1])}_{int(cur_location[0])}.p
 
 st.plotly_chart(fig, use_container_width=True)
 
+
+
 col1, col2 = st.columns(2)
 with col1:
     if st.button('Drill like a Human'):
         next_position = apply_user_input()
         st.session_state.start_position_state = next_position
+        print(f"Shape of state for DA {state.shape}")
         state = da(state, next_position)
         st.session_state.ensemble_state = state
         toggle_first_step()
@@ -257,6 +266,7 @@ with col2:
         if next_optimal is None:
             next_optimal = compute_and_apply_robot_suggestion()
         st.session_state.start_position_state = next_optimal
+        print(f"Shape of state for DA {state.shape}")
         state = da(state, next_optimal)
         st.session_state.ensemble_state = state
         toggle_first_step()
