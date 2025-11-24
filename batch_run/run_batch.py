@@ -112,12 +112,14 @@ def batch_run(starting_position=(31,0), true_realization_id="C1", seed=0, discou
     fix_seed(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    save_file_flags = f"{true_realization_id}_start_{starting_position[0]}_seed_{seed}_disc_{int(discount_factor*100)}"
+
     # get truth
     synthetic_truth_vector = load_default_latent_tensor(true_realization_id).to(device)
 
     # get intitial state
     ensemble_state = load_default_starting_ensemble_state()
-    ensemble_state_torch = torch.tensor(ensemble_state.T, dtype=torch.float32, device=device)
+    prior_state_torch = torch.tensor(ensemble_state.T, dtype=torch.float32, device=device)
 
     # setting simulators
     # this simulator is for data assimilation and should perhaps be optimized
@@ -176,7 +178,7 @@ def batch_run(starting_position=(31,0), true_realization_id="C1", seed=0, discou
 
     # pre-job mapping and plotting
     # transform to facies
-    pri_facies_earth = geosim_ensemble.gan_evaluator.eval(ensemble_state_torch,
+    pri_facies_earth = geosim_ensemble.gan_evaluator.eval(prior_state_torch,
                                                           no_grad=True)
 
     # ensenble
@@ -202,15 +204,17 @@ def batch_run(starting_position=(31,0), true_realization_id="C1", seed=0, discou
                           next_optimal_recommendation=next_optimal,
                           all_paths=paths,
                           full_nn_model=geosim_ensemble,
+                          save_file_flags=f"{save_file_flags}_pre"
                           )
 
-    # loading data assimilation settings
-    da_input_dict = input_dict.copy()
 
-    for i in range(64):
+
+    for i in range(63):
         # actual run step
         # start with DA
-        post_state_vectors = da(ensemble_state_torch,
+        # loading data assimilation settings
+        da_input_dict = input_dict.copy()
+        post_state_vectors = da(prior_state_torch,
                                 start_position,
                                 da_input_dict,
                                 true_sim_for_da)
@@ -230,12 +234,12 @@ def batch_run(starting_position=(31,0), true_realization_id="C1", seed=0, discou
                                                         recompute_optimal_paths_from_next=True
                                                         )
 
-        ensemble_facies_truncated = torch.where(pri_facies_earth >= 0,
-                                                torch.tensor(0, dtype=pri_facies_earth.dtype),
-                                                torch.tensor(1, dtype=pri_facies_earth.dtype))
+        ensemble_facies_truncated = torch.where(post_facies_earth >= 0,
+                                                torch.tensor(0, dtype=post_facies_earth.dtype),
+                                                torch.tensor(1, dtype=post_facies_earth.dtype))
         ensemble_facies_model_np = ensemble_facies_truncated.to("cpu").numpy()[:, 0, :, :]
 
-        # pre-job plotting
+        # in-job plotting
         plot_results_one_step(ensemble_facies_images=ensemble_facies_model_np,
                               true_facies_image=true_facies_model_np,
                               drilled_path=path,
@@ -243,7 +247,15 @@ def batch_run(starting_position=(31,0), true_realization_id="C1", seed=0, discou
                               next_optimal_recommendation=next_optimal,
                               all_paths=paths,
                               full_nn_model=geosim_ensemble,
+                              save_file_flags=save_file_flags
                               )
+
+        # moving to the next step
+        path.append(next_optimal)
+        start_position = next_optimal
+        prior_state_torch = post_state_vectors
+
+
 
 
 
@@ -258,7 +270,25 @@ def batch_run(starting_position=(31,0), true_realization_id="C1", seed=0, discou
 
 
 if __name__ == "__main__":
-    # todo add parameters according to the tests
-    batch_run(seed=7)
+    # reference example 
+    batch_run()
+
+
+    prefixes = [
+        "A1", "A7", "B2", "B8", "F3", "G7", "G8",
+        "C1_minus_2_24", "C1_minus_45_60", "C1_minus_28_57",
+        "C1_minus_47_55", "C1_minus_36_58", "C1_minus_42_50",
+        "C1_6"]
+    # new tests     C1_minus_ ...
+    for model_id in prefixes:
+        batch_run(true_realization_id=model_id)
+
+
+    # example where we are in the top sequence
+    batch_run(starting_position=(12,0), seed=42)
+
     # example where we need to target lower sequence
     batch_run(starting_position=(54,0), seed=54)
+
+
+

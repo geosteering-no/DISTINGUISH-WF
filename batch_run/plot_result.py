@@ -24,6 +24,8 @@ mpl.rcParams.update({
     "figure.titlesize": 22,
 })
 
+
+save_folder = "figures"
 # home = os.path.expanduser("~") # os independent home
 #
 #
@@ -78,7 +80,8 @@ def plot_results_one_step(true_facies_image=None,
                           true_optimal_path=None,
                           next_optimal_recommendation=None,
                           all_paths=None,
-                          save_file_flags: str = ""):
+                          save_file_flags: str = "",
+                          stop_to_show_plots=False):
     # todo fix plotting given the simulated features
     global_extent = [-5, 640-5, -16.25, 15.75]
 
@@ -129,7 +132,11 @@ def plot_results_one_step(true_facies_image=None,
                         linewidths=1)
 
     # this plots already drilled path
-    # todo plot
+    drilled_path_x, drilled_path_y = convert_path_to_np_arrays(drilled_path)
+    ax_res.plot(drilled_path_x, drilled_path_y,
+                color='black',
+                linewidth=2)
+
 
     # this plots true best path
     true_path_x, true_path_y = convert_path_to_np_arrays(true_optimal_path)
@@ -160,7 +167,10 @@ def plot_results_one_step(true_facies_image=None,
     ax_res.set_yticks(np.arange(-10, 11, 5))
     ax_res.yaxis.set_major_formatter(FuncFormatter(fmt_depth))
 
-    # plt.show()
+    plt.savefig(f"{save_folder}/{save_file_flags}_{drilled_path[-1][1]}.pdf", bbox_inches="tight")
+    plt.savefig(f"{save_folder}/{save_file_flags}_{drilled_path[-1][1]}.png", dpi=300, bbox_inches="tight")
+    if stop_to_show_plots:
+        plt.show()
 
     #
     # # Load the decision points

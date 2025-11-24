@@ -38,7 +38,7 @@ global_extent = [0, 640, -16.25, 15.75]
 
 def earth(state, simulator: GeoSim):
     # we need to switch to TkAgg to show GUI, something switches it to somethiong else
-    matplotlib.use('TkAgg')
+    matplotlib.use('Agg')
     plot_path = 'figures/'
     #check if the path exists and create it if not
     if not os.path.exists(plot_path):
