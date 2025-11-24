@@ -39,7 +39,7 @@ OBSNAME
 TVD
 
 NE
-100
+250
 
 TRUEDATA
 ../data/data.pkl
