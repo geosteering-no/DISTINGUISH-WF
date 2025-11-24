@@ -274,8 +274,11 @@ if __name__ == "__main__":
     batch_run()
 
 
-    prefixes = ["C1_minus_2_24", "C1_minus_45_60", "C1_minus_28_57",
-                "C1_minus_47_55", "C1_minus_36_58", "C1_minus_42_50"]
+    prefixes = [
+        "A1", "A7", "B2", "B8", "F3", "G7", "G8",
+        "C1_minus_2_24", "C1_minus_45_60", "C1_minus_28_57",
+        "C1_minus_47_55", "C1_minus_36_58", "C1_minus_42_50",
+        "C1_6"]
     # new tests     C1_minus_ ...
     for model_id in prefixes:
         batch_run(true_realization_id=model_id)
