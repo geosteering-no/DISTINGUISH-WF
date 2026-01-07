@@ -61,7 +61,7 @@ class SyntheticTruth:
             freq, dist = di
             data[(freq, dist)] = [logs_np[count, :]]
             # var[(freq, dist)] = [[['REL', 10] if abs(el) > abs(0.1*np.mean(values)) else ['ABS', (0.1*np.mean(values))**2] for el in val] for val in values]
-            var[(freq, dist)] = [[['ABS', (0.1 * np.max(val)) ** 2] for val in logs_np[count, :]]]
+            var[(freq, dist)] = [[['ABS', (0.1 * np.max(np.abs(val))) ** 2] for val in logs_np[count, :]]]
             # var[(freq, dist)] = [[['REL', 0.1] for val in logs_np[count, :]]]
 
         df = pd.DataFrame(data, columns=self.simulator.all_data_types, index=[0])
