@@ -271,11 +271,12 @@ def batch_run(starting_position=(31,0), true_realization_id="C1", seed=0, discou
 
 if __name__ == "__main__":
     # reference example 
-    batch_run()
+    # batch_run()
 
 
     prefixes = [
-        "A1", "A7", "B2", "B8", "F3", "G7", "G8",
+        # "A1", "A7", "B2", "B8", "F3",
+        "G7", "G8",
         "C1_minus_2_24", "C1_minus_45_60", "C1_minus_28_57",
         "C1_minus_47_55", "C1_minus_36_58", "C1_minus_42_50",
         "C1_6"]

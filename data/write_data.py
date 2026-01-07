@@ -32,7 +32,7 @@ for component in range(60, 60+1):
         upper = component+2
     for end_comp in range(component+1, upper, 7):
 
-        my_latent_tensor = load_default_latent_tensor().to(device)
+        my_latent_tensor = load_default_latent_tensor("A7").to(device)
         my_size = my_latent_tensor.shape[1]
         if component < my_size:
             my_latent_tensor[:, component:end_comp] = -my_latent_tensor[:, component:end_comp]
