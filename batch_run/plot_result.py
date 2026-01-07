@@ -13,6 +13,8 @@ from pathoptim.DP import create_weighted_image, evaluate_earth_model
 
 import os,sys
 
+from scipy.ndimage import label
+
 # global font sizes for the whole script
 mpl.rcParams.update({
     "font.size": 18,         # base font
@@ -111,8 +113,8 @@ def plot_results_one_step(true_facies_image=None,
     prob_im = ax_res.imshow(ensemble_facies_model_mean,
                                aspect='auto',
                                cmap='tab20b',
-                                vmin=0,   # lower bound of color scale
-                                vmax=1,    # upper bound of color scale
+                               vmin=0,   # lower bound of color scale
+                               vmax=1,    # upper bound of color scale
                                extent=global_extent)
     cbar = plt.colorbar(prob_im, ax=ax_res)
 
@@ -124,6 +126,12 @@ def plot_results_one_step(true_facies_image=None,
     x = np.linspace(xmin, xmax, nx)
     y = np.linspace(ymax, ymin, ny) # origin=lower
 
+    # Drilled path
+    # Measurement locations
+    # Proposed direction
+    # Further trajectory options
+    # Outline of sand+crevasse in the true model
+
     cs = ax_res.contour(x, y,
                         true_facies_image,
                         levels=[0.5],
@@ -131,20 +139,21 @@ def plot_results_one_step(true_facies_image=None,
                         linestyles="dashed",
                         linewidths=1)
 
+    ax_res.plot([0],[0],color="white",
+                        linestyle="dashed",
+                        linewidth=1,
+                label="Outline of sand+crevasse in the true model")
+    # cs.collections[0].set_label("Outline of sand+crevasse in the true model")
+
     # this plots already drilled path
     drilled_path_x, drilled_path_y = convert_path_to_np_arrays(drilled_path)
     ax_res.plot(drilled_path_x, drilled_path_y,
                 color='black',
-                linewidth=2)
+                linewidth=2,
+                label="Drilled path")
 
 
-    # this plots true best path
-    true_path_x, true_path_y = convert_path_to_np_arrays(true_optimal_path)
-    ax_res.plot(true_path_x, true_path_y,
-                linestyle='None',
-                marker='o',
-                color='gray',
-                markersize=3)
+
 
 
 
@@ -155,22 +164,52 @@ def plot_results_one_step(true_facies_image=None,
                 linestyle='--',
                 marker='*',
                 color='black',
-                markersize=3)
+                markersize=3,
+                label="Proposed direction")
 
+
+
+    legend_out = False
     for path in all_paths:
         path_x, path_y = convert_path_to_np_arrays(path, add_noise=0.1)
-        ax_res.plot(path_x, path_y,
-                    color='black',
-                    linewidth=0.2)
+        if legend_out:
+            ax_res.plot(path_x, path_y,
+                        color='black',
+                        linewidth=0.2)
+        else:
+            ax_res.plot(path_x, path_y,
+                        color='black',
+                        linewidth=0.2,
+                        label="Further trajectory options")
+            legend_out = True
+
+    # this plots true best path
+    true_path_x, true_path_y = convert_path_to_np_arrays(true_optimal_path)
+    ax_res.plot(true_path_x, true_path_y,
+                linestyle='None',
+                marker='o',
+                color='gray',
+                markersize=3,
+                label="Optimal solution (if true model is known)")
 
     # ticks at -10, -5, 0, 5, 10
     ax_res.set_yticks(np.arange(-10, 11, 5))
     ax_res.yaxis.set_major_formatter(FuncFormatter(fmt_depth))
 
+
+
+    if stop_to_show_plots:
+        ax_res.legend(
+            loc="center left",
+            bbox_to_anchor=(1.2, 0.5),
+            facecolor="lightgray")
+        plt.show()
+
     plt.savefig(f"{save_folder}/{save_file_flags}_{drilled_path[-1][1]}.pdf", bbox_inches="tight")
     plt.savefig(f"{save_folder}/{save_file_flags}_{drilled_path[-1][1]}.png", dpi=300, bbox_inches="tight")
-    if stop_to_show_plots:
-        plt.show()
+
+
+    # exit()
 
     #
     # # Load the decision points
