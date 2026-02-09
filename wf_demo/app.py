@@ -195,7 +195,7 @@ def compute_and_apply_robot_suggestion():
                                        true_sim.simulator.NNmodel.gan_evaluator)
     return next_optimal
 
-if st.checkbox('Show Robot suggestion'):
+if st.checkbox('Show Optimistic DP suggestion'):
     flags_string += "_robot"
     # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
     next_optimal = compute_and_apply_robot_suggestion()
@@ -204,14 +204,13 @@ if st.checkbox('Show Robot suggestion'):
                     name='Robot suggestion')
 
 # show all the DP paths
-# TODO show paths starting from the suggestion instead
-if st.checkbox('Show Robot paths'):
+if st.checkbox('Show Optimistic DP paths'):
     # calculate the robot paths
     # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
     next_optimal = compute_and_apply_robot_suggestion()
     flags_string += "_all"
 
-    optimal_paths = [perform_dynamic_programming(value_ensemble[j, :, :], start_position,
+    optimal_paths = [perform_dynamic_programming(value_ensemble[j, :, :], next_optimal,
                      cost_vector=pathfinder().get_cost_vector())[2] for j in range(state.shape[1])]
     # plot the optimal paths in the plotly figure
     for j in range(state.shape[1]):
