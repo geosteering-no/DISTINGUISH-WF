@@ -53,7 +53,7 @@ norm = Normalize(vmin=0.0, vmax=1)
 if 'first_position' not in st.session_state:
     st.session_state['first_position'] = True
 # Also, plot the current state as a main feature of the app.
-st.title('Distinguish Open Workflow (GMO)')
+st.title('Distinguish Open Workflow')
 # GMO refers to Generic Modern [UDAR] Observations
 
 next_optimal = None
