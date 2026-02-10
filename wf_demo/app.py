@@ -184,7 +184,25 @@ if st.checkbox('Cheat!'):
                     color_continuous_scale=t_cont,
                     zmin=value_range[0],
                     zmax=value_range[1])
+
+    next_optimal, paths = pathfinder().no_gan_run(
+        weighted_images=true_values,
+        start_point=start_position
+    )
     # fig = px.imshow(1.*np_gan_output[0,1,:,:]+0.5*np_gan_output[0,2,:,:], aspect='auto', color_continuous_scale='viridis')
+    fig.add_scatter(x=[next_optimal[1]], y=[next_optimal[0]], mode='markers',
+                    marker=dict(color='white', size=10, symbol='star'),
+                    name='Cheat!')
+    optimal_path = paths
+    # plot the optimal paths in the plotly figure
+    path_rows, path_cols = zip(*(optimal_path[0]))
+    # noise_mult = 0.1
+    # # noise_mult = 0
+    # path_rows_perturbed = [el + noise_mult * np.random.randn() for el in path_rows]
+    fig.add_trace(
+        go.Scatter(x=path_cols, y=path_rows, mode='lines',
+                   line=dict(color='white', width=2),
+                   showlegend=False))
 
 
 # Position the colorbar horizontally below the figure
@@ -286,7 +304,7 @@ if st.checkbox('Show Pessimistic DP suggestion and the future path'):
     # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
     next_optimal, paths = compute_and_apply_robot_suggestion(pessimistic=True)
     fig.add_scatter(x=[next_optimal[1]], y=[next_optimal[0]], mode='markers',
-                    marker=dict(color='red', size=10, symbol='star'),
+                    marker=dict(color='red', size=10, symbol='x'),
                     name='PDP suggestion')
     optimal_path = paths
     # plot the optimal paths in the plotly figure
