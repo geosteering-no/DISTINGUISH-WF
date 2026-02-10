@@ -247,7 +247,7 @@ if st.checkbox('Show Human suggestion'):
 
 
 
-def compute_and_apply_robot_suggestion(pessimistic=False):
+def compute_and_apply_robot_suggestion(pessimistic=False, greedy=False):
     # todo maybe we want to remove the if and just pass the argument
     if pessimistic:
         # pessimistic
@@ -257,6 +257,14 @@ def compute_and_apply_robot_suggestion(pessimistic=False):
             recompute_optimal_paths_from_next=False,
             pessimistic=True
         )
+    elif greedy:
+        # greedy
+        next_optimal, paths = pathfinder().no_gan_run(
+            weighted_images=values_ensemble_torch,
+            start_point=start_position,
+            recompute_optimal_paths_from_next=False,
+            greedy=True
+        )
     else:
         # optimistic
         next_optimal, paths = pathfinder().no_gan_run(
@@ -264,12 +272,26 @@ def compute_and_apply_robot_suggestion(pessimistic=False):
             start_point=start_position,
             recompute_optimal_paths_from_next=True,
             pessimistic=False
-
         )
         # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32).to(device),
         #                                    start_position,
         #                                    true_sim.simulator.NNmodel.gan_evaluator)
     return next_optimal, paths
+
+if st.checkbox('Show Greedy suggestion'):
+    # let's always show paths with the suggestion
+    # let's always show paths with the suggestion
+    flags_string += "_greedy"
+    # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
+    next_optimal_g, paths = compute_and_apply_robot_suggestion(
+        greedy=True
+    )
+    if next_optimal_g[0] is None or next_optimal_g[1] is None:
+        pass
+    else:
+        fig.add_scatter(x=[next_optimal_g[1]], y=[next_optimal_g[0]], mode='markers',
+                        marker=dict(color='black', size=10, symbol='circle-open'),
+                        name='Greedy Robot suggestion')
 
 if st.checkbox('Show Optimistic DP suggestion and future paths'):
     # let's always show paths with the suggestion
