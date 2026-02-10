@@ -279,47 +279,53 @@ if st.checkbox('Show Optimistic DP suggestion and future paths'):
     next_optimal_o, paths = compute_and_apply_robot_suggestion(
         pessimistic=False
     )
-    fig.add_scatter(x=[next_optimal_o[1]], y=[next_optimal_o[0]], mode='markers',
-                    marker=dict(color='black', size=10, symbol='cross'),
-                    name='Optimistic DP Robot suggestion')
-    #
-    # # show all the DP paths
-    # if st.checkbox('Show Optimistic DP paths'):
-    # calculate the robot paths
-    # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
-    flags_string += "_all"
+    if next_optimal_o[0] is None or next_optimal_o[1] is None:
+        pass
+    else:
+        fig.add_scatter(x=[next_optimal_o[1]], y=[next_optimal_o[0]], mode='markers',
+                        marker=dict(color='black', size=10, symbol='cross'),
+                        name='Optimistic DP Robot suggestion')
+        #
+        # # show all the DP paths
+        # if st.checkbox('Show Optimistic DP paths'):
+        # calculate the robot paths
+        # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
+        flags_string += "_all"
 
-    # optimal_paths = [perform_dynamic_programming(value_ensemble[j, :, :], next_optimal,
-    #                  cost_vector=pathfinder().get_cost_vector())[2] for j in range(state.shape[1])]
-    optimal_path = paths
-    # plot the optimal paths in the plotly figure
-    for j in range(state.shape[1]):
-        path_rows, path_cols = zip(*(optimal_path[j]))
-        noise_mult = 0.1
-        # noise_mult = 0
-        path_rows_perturbed = [el + noise_mult * np.random.randn() for el in path_rows]
-        fig.add_trace(
-            go.Scatter(x=path_cols, y=path_rows_perturbed, mode='lines',
-                       line=dict(color='black', width=0.5),
-                       showlegend=False))
+        # optimal_paths = [perform_dynamic_programming(value_ensemble[j, :, :], next_optimal,
+        #                  cost_vector=pathfinder().get_cost_vector())[2] for j in range(state.shape[1])]
+        optimal_path = paths
+        # plot the optimal paths in the plotly figure
+        for j in range(state.shape[1]):
+            path_rows, path_cols = zip(*(optimal_path[j]))
+            noise_mult = 0.1
+            # noise_mult = 0
+            path_rows_perturbed = [el + noise_mult * np.random.randn() for el in path_rows]
+            fig.add_trace(
+                go.Scatter(x=path_cols, y=path_rows_perturbed, mode='lines',
+                           line=dict(color='black', width=0.5),
+                           showlegend=False))
 
 if st.checkbox('Show Pessimistic DP suggestion and the future path'):
     flags_string += "_pessimistic"
     # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
     next_optimal_p, paths = compute_and_apply_robot_suggestion(pessimistic=True)
-    fig.add_scatter(x=[next_optimal_p[1]], y=[next_optimal_p[0]], mode='markers',
-                    marker=dict(color='red', size=10, symbol='x'),
-                    name='Pessimistic DP Robot suggestion')
-    optimal_path = paths
-    # plot the optimal paths in the plotly figure
-    path_rows, path_cols = zip(*(optimal_path[0]))
-    # noise_mult = 0.1
-    # # noise_mult = 0
-    # path_rows_perturbed = [el + noise_mult * np.random.randn() for el in path_rows]
-    fig.add_trace(
-        go.Scatter(x=path_cols, y=path_rows, mode='lines',
-                   line=dict(color='red', width=2),
-                   showlegend=False))
+    if next_optimal_p[0] is None or next_optimal_p[1] is None:
+        pass
+    else:
+        fig.add_scatter(x=[next_optimal_p[1]], y=[next_optimal_p[0]], mode='markers',
+                        marker=dict(color='red', size=10, symbol='x'),
+                        name='Pessimistic DP Robot suggestion')
+        optimal_path = paths
+        # plot the optimal paths in the plotly figure
+        path_rows, path_cols = zip(*(optimal_path[0]))
+        # noise_mult = 0.1
+        # # noise_mult = 0
+        # path_rows_perturbed = [el + noise_mult * np.random.randn() for el in path_rows]
+        fig.add_trace(
+            go.Scatter(x=path_cols, y=path_rows, mode='lines',
+                       line=dict(color='red', width=2),
+                       showlegend=False))
 
 
 if true_values_from_cheat is not None:
