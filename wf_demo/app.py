@@ -192,7 +192,9 @@ fig.update_layout(coloraxis_colorbar=dict(
 ))
 
 # this draws only the current initial bit position
-fig.add_scatter(x=[start_position[1]], y=[start_position[0]], mode='markers', marker=dict(color='red', size=10),
+fig.add_scatter(x=[start_position[1]], y=[start_position[0]],
+                mode='markers',
+                marker=dict(color='gray', size=10),
                 name='Start Position')
 
 # st.write(f'The current position of the well is at: {start_position}')
@@ -219,44 +221,67 @@ if st.checkbox('Show Human suggestion'):
 
 
 def compute_and_apply_robot_suggestion(pessimistic=False):
-    next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32).to(device),
-                                       start_position,
-                                       true_sim.simulator.NNmodel.gan_evaluator)
-    return next_optimal
+    if pessimistic:
+        # pessimistic
+        next_optimal, _ = pathfinder().run(torch.tensor(state, dtype=torch.float32).to(device),
+                                           start_position,
+                                           true_sim.simulator.NNmodel.gan_evaluator)
+    else:
+        # optimistic
+        next_optimal, paths = pathfinder().no_gan_run(
+            weighted_images=values_ensemble_torch,
+            start_point=start_position,
+            recompute_optimal_paths_from_next=True
+        )
+        # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32).to(device),
+        #                                    start_position,
+        #                                    true_sim.simulator.NNmodel.gan_evaluator)
+    return next_optimal, paths
 
 if st.checkbox('Show Optimistic DP suggestion'):
-    flags_string += "_robot"
+    # let's always show paths with the suggestion
+    flags_string += "_optimistic"
     # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
-    next_optimal = compute_and_apply_robot_suggestion()
+    next_optimal, paths = compute_and_apply_robot_suggestion(
+        pessimistic=False
+    )
     fig.add_scatter(x=[next_optimal[1]], y=[next_optimal[0]], mode='markers',
                     marker=dict(color='black', size=10, symbol='cross'),
-                    name='Robot suggestion')
-
-# show all the DP paths
-if st.checkbox('Show Optimistic DP paths'):
+                    name='ODP suggestion')
+    #
+    # # show all the DP paths
+    # if st.checkbox('Show Optimistic DP paths'):
     # calculate the robot paths
     # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
-    next_optimal = compute_and_apply_robot_suggestion()
     flags_string += "_all"
 
-    optimal_paths = [perform_dynamic_programming(value_ensemble[j, :, :], next_optimal,
-                     cost_vector=pathfinder().get_cost_vector())[2] for j in range(state.shape[1])]
+    # optimal_paths = [perform_dynamic_programming(value_ensemble[j, :, :], next_optimal,
+    #                  cost_vector=pathfinder().get_cost_vector())[2] for j in range(state.shape[1])]
+    optimal_paths = paths
     # plot the optimal paths in the plotly figure
     for j in range(state.shape[1]):
         path_rows, path_cols = zip(*(optimal_paths[j]))
-        noise_mult = 0.5
+        noise_mult = 0.1
         # noise_mult = 0
-        row_list = [el + noise_mult * np.random.randn() for el in path_rows]
+        path_rows_perturbed = [el + noise_mult * np.random.randn() for el in path_rows]
         fig.add_trace(
-            go.Scatter(x=path_cols, y=path_rows, mode='lines', line=dict(color='black'), showlegend=False))
+            go.Scatter(x=path_cols, y=path_rows_perturbed, mode='lines',
+                       line=dict(color='black', width=0.5),
+                       showlegend=False))
 
-
+if st.checkbox('Show Pessimistic DP suggestion'):
+    flags_string += "_pessimistic"
+    # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
+    next_optimal = compute_and_apply_robot_suggestion(pessimistic=True)
+    fig.add_scatter(x=[next_optimal[1]], y=[next_optimal[0]], mode='markers',
+                    marker=dict(color='red', size=10, symbol='star'),
+                    name='PDP suggestion')
 
 
 
 path_rows, path_cols = zip(*(st.session_state['path']))
 fig.add_trace(go.Scatter(x=path_cols, y=path_rows, mode='lines',
-                         line=dict(color='red', width=4), showlegend=False))
+                         line=dict(color='gray', width=4), showlegend=False))
 
 x_values = list(ind*10 for ind in range(1,7))
 x_labels = list(f"{x*10} m" for x in x_values)
