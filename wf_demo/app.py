@@ -4,6 +4,8 @@ os.environ["MPLBACKEND"] = "Agg"  # must be before importing matplotlib
 import matplotlib
 matplotlib.use("Agg")
 
+
+from matplotlib import colormaps
 import numpy as np
 import warnings
 
@@ -14,7 +16,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 # warnings.filterwarnings("always")
 from pathoptim.pathOPTIM import pathfinder
-from pathoptim.DP import perform_dynamic_programming
+from pathoptim.DP import perform_dynamic_programming, evaluate_earth_model_ensemble
 from GeoSim.sim import GeoSim
 from pipt.loop.assimilation import Assimilate
 from pipt import pipt_init
@@ -90,12 +92,15 @@ def get_gan_earth(state):
     # TODO fix with passing device
     sim_ensemble = GeoSim(input_dict)
     # print(f"Input for display sim: {input_dict}")
-    facies_ensemble = earth(torch.tensor(state, dtype=torch.float32).to(device), simulator=sim_ensemble)
+    # facies_ensemble = earth(torch.tensor(state, dtype=torch.float32).to(device), simulator=sim_ensemble)
+    state_torch = torch.tensor(state.T, dtype=torch.float32).to(device)
+    facies_ensemble = sim_ensemble.NNmodel.gan_evaluator.eval(state_torch, no_grad=True)
 
-    weights = np.array([-0.1, 1, 0.5])
-    value_ensemble = np.mean(facies_ensemble * weights.reshape(1, 3, 1, 1), axis=1)  # Apply weights to the true facies
+    # # TODO fix the weights
+    # weights = np.array([-0.1, 1, 0.5])
+    # value_ensemble = np.mean(facies_ensemble * weights.reshape(1, 3, 1, 1), axis=1)  # Apply weights to the true facies
 
-    return value_ensemble, facies_ensemble
+    return facies_ensemble
 
 @st.cache_data
 def da(state, start_position):
@@ -134,10 +139,34 @@ def da(state, start_position):
         state = np.load('posterior_state_estimate.npz')['x']  # import the posterior state estimate
         return state
 
-value_ensemble, facies_ensemble = get_gan_earth(state)
+facies_ensemble_torch = get_gan_earth(state)
+values_ensemble_torch = evaluate_earth_model_ensemble(facies_ensemble_torch, compute_geobody_sizes=True)
+# TODO get the correct visualization
 
 # this is the plotting canvas and the average earth value
-fig = px.imshow(value_ensemble[:,:,:].mean(axis=0), aspect='auto', color_continuous_scale='viridis')
+value_ensemble = values_ensemble_torch.detach().cpu().numpy()
+
+# this is a ChatGPT-suggested trick to make continuous palette of discrete
+# 20 discrete colors from matplotlib tab20 -> Plotly rgb strings
+colors_from_map = colormaps["tab20b"]
+rgb = colors_from_map.colors
+# cmap = cm.get_cmap("tab20c", 20)   # force 20 discrete entries
+# tab20c = [cmap(i) for i in range(20)]
+colors = [f"rgb({int(r*255)},{int(g*255)},{int(b*255)})" for r,g,b in rgb]
+# colors = [f"rgb({int(r*255)},{int(g*255)},{int(b*255)})" for r,g,b,_ in tab20c]
+
+# build (almost) discrete colorscale for imshow
+n = len(colors)
+eps = 0
+t_cont = []
+for i, c in enumerate(colors):
+    lo = i / n
+    hi = (i + 1) / n
+    t_cont += [(lo + eps, c), (hi - eps, c)]  # 2 points per color
+
+fig = px.imshow(value_ensemble[:, :, :].mean(axis=0),
+                aspect='auto',
+                color_continuous_scale=t_cont)
 # fig = px.imshow(facies_ensemble[0, :, :], aspect='auto', color_continuous_scale='viridis')
 
 if st.checkbox('Cheat!'):
@@ -189,7 +218,7 @@ if st.checkbox('Show Human suggestion'):
 
 
 
-def compute_and_apply_robot_suggestion():
+def compute_and_apply_robot_suggestion(pessimistic=False):
     next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32).to(device),
                                        start_position,
                                        true_sim.simulator.NNmodel.gan_evaluator)
