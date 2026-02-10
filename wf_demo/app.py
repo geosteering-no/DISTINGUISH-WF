@@ -224,21 +224,24 @@ fig.add_scatter(x=[start_position[1]], y=[start_position[0]],
 # st.write(f'The current position of the well is at: {start_position}')
 
 
-def apply_user_input(user_choice: str = None):
-    if user_choice == 'Drill up':
-        next_position = (start_position[0] - 1, start_position[1] + 1)
-    elif user_choice == 'Drill ahead':
-        next_position = (start_position[0], start_position[1] + 1)
-    else:
-        next_position = (start_position[0] + 1, start_position[1] + 1)
+def apply_user_input(user_choice):
+    if not isinstance(user_choice, int):
+        user_choice = 0
+    next_position = (start_position[0] + user_choice, start_position[1] + 1)
     return next_position
 
 flags_string = ""
 
 if st.checkbox('Show Human suggestion'):
     flags_string += "_human"
-    user_step_select = st.radio('What is the next step?', ['Drill up', 'Drill ahead', 'Drill down'])
-    next_position = apply_user_input(user_step_select)
+    user_selection_dy = st.slider(label='Select drilling direction', key='user_selection',
+                                  min_value=-1,
+                                  max_value=1,
+                                  value=int(0),
+                                  step=1)
+    # user_step_select = st.radio('What is the next step?', ['Drill up', 'Drill ahead', 'Drill down'])
+    # next_position = apply_user_input(user_step_select)
+    next_position = apply_user_input(user_selection_dy)
     fig.add_scatter(x=[next_position[1]], y=[next_position[0]], mode='markers',
                     marker=dict(color='blue', size=10), name='Human Selection')
 
@@ -270,14 +273,15 @@ def compute_and_apply_robot_suggestion(pessimistic=False):
 
 if st.checkbox('Show Optimistic DP suggestion and future paths'):
     # let's always show paths with the suggestion
+    # let's always show paths with the suggestion
     flags_string += "_optimistic"
     # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
-    next_optimal, paths = compute_and_apply_robot_suggestion(
+    next_optimal_o, paths = compute_and_apply_robot_suggestion(
         pessimistic=False
     )
-    fig.add_scatter(x=[next_optimal[1]], y=[next_optimal[0]], mode='markers',
+    fig.add_scatter(x=[next_optimal_o[1]], y=[next_optimal_o[0]], mode='markers',
                     marker=dict(color='black', size=10, symbol='cross'),
-                    name='ODP suggestion')
+                    name='Optimistic DP Robot suggestion')
     #
     # # show all the DP paths
     # if st.checkbox('Show Optimistic DP paths'):
@@ -302,10 +306,10 @@ if st.checkbox('Show Optimistic DP suggestion and future paths'):
 if st.checkbox('Show Pessimistic DP suggestion and the future path'):
     flags_string += "_pessimistic"
     # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
-    next_optimal, paths = compute_and_apply_robot_suggestion(pessimistic=True)
-    fig.add_scatter(x=[next_optimal[1]], y=[next_optimal[0]], mode='markers',
+    next_optimal_p, paths = compute_and_apply_robot_suggestion(pessimistic=True)
+    fig.add_scatter(x=[next_optimal_p[1]], y=[next_optimal_p[0]], mode='markers',
                     marker=dict(color='red', size=10, symbol='x'),
-                    name='PDP suggestion')
+                    name='Pessimistic DP Robot suggestion')
     optimal_path = paths
     # plot the optimal paths in the plotly figure
     path_rows, path_cols = zip(*(optimal_path[0]))
@@ -317,15 +321,17 @@ if st.checkbox('Show Pessimistic DP suggestion and the future path'):
                    line=dict(color='red', width=2),
                    showlegend=False))
 
+
 if true_values_from_cheat is not None:
+    flags_string += "_cheat"
     # the cheat was activated
     # we draw trajectories over the rest of the interface
-    next_optimal, paths = pathfinder().no_gan_run(
+    next_optimal_cheat, paths = pathfinder().no_gan_run(
         weighted_images=true_values_from_cheat,
         start_point=start_position
     )
     # fig = px.imshow(1.*np_gan_output[0,1,:,:]+0.5*np_gan_output[0,2,:,:], aspect='auto', color_continuous_scale='viridis')
-    fig.add_scatter(x=[next_optimal[1]], y=[next_optimal[0]], mode='markers',
+    fig.add_scatter(x=[next_optimal_cheat[1]], y=[next_optimal_cheat[0]], mode='markers',
                     marker=dict(color='white', size=10, symbol='star'),
                     name='Cheat!')
     optimal_path = paths
@@ -366,21 +372,30 @@ st.plotly_chart(fig, use_container_width=True)
 
 
 
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
 with col1:
     if st.button('Drill like a Human'):
-        next_position = apply_user_input()
+        next_position = apply_user_input(0)
         st.session_state.start_position_state = next_position
         print(f"Shape of state for DA {state.shape}")
         state = da(state, next_position)
         st.session_state.ensemble_state = state
         toggle_first_step()
 with col2:
-    if st.button('Drill like a Robot'):
-        if next_optimal is None:
-            next_optimal = compute_and_apply_robot_suggestion()
-        st.session_state.start_position_state = next_optimal
+    if st.button('Drill like Optimistic Robot'):
+        if next_optimal_o is None:
+            next_optimal_o, _ = compute_and_apply_robot_suggestion(pessimistic=False)
+        st.session_state.start_position_state = next_optimal_o
         print(f"Shape of state for DA {state.shape}")
-        state = da(state, next_optimal)
+        state = da(state, next_optimal_o)
+        st.session_state.ensemble_state = state
+        toggle_first_step()
+with col3:
+    if st.button('Drill like Pessimistic Robot'):
+        if next_optimal_p is None:
+            next_optimal_p, _ = compute_and_apply_robot_suggestion(pessimistic=True)
+        st.session_state.start_position_state = next_optimal_p
+        print(f"Shape of state for DA {state.shape}")
+        state = da(state, next_optimal_p)
         st.session_state.ensemble_state = state
         toggle_first_step()
