@@ -60,7 +60,8 @@ if 'first_position' not in st.session_state:
 st.title('Distinguish Open Workflow')
 # GMO refers to Generic Modern [UDAR] Observations
 
-next_optimal = None
+next_optimal_o = None
+next_optimal_p = None
 # this creates an instance if a simulator for synthetic truth
 
 
