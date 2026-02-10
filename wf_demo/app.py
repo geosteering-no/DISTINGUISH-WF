@@ -42,6 +42,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 global_extent = [0, 640, -16.25, 15.75]
 norm = Normalize(vmin=0.0, vmax=1)
 
+value_range = [0., 10.]
+
 # weights_folder = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/em/{}.pth?ref_type=heads"
 # scalers_folder = weights_folder
 # full_em_model_file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/em/checkpoint_770.pth?ref_type=heads"
@@ -166,19 +168,23 @@ for i, c in enumerate(colors):
 
 fig = px.imshow(value_ensemble[:, :, :].mean(axis=0),
                 aspect='auto',
-                color_continuous_scale=t_cont)
+                color_continuous_scale=t_cont,
+                zmin=value_range[0],
+                zmax=value_range[1])
 # fig = px.imshow(facies_ensemble[0, :, :], aspect='auto', color_continuous_scale='viridis')
 
 if st.checkbox('Cheat!'):
     # true_gan_output, facies_output = get_gan_truth(true_sim.latent_synthetic_truth)
     true_gan_output = true_sim.simulator.NNmodel.eval_gan(true_sim.latent_synthetic_truth)
-    print(f"The output {true_gan_output}")
-    print(f"Output shape {true_gan_output.shape}")
-    np_gan_output = true_gan_output.cpu().numpy()
-    print(f"The output {np_gan_output}")
-    print(f"Output shape {np_gan_output.shape}")
-    # todo improve from the hard-coded constants, see get_gan_...
-    fig = px.imshow(1.*np_gan_output[0,1,:,:]+0.5*np_gan_output[0,2,:,:], aspect='auto', color_continuous_scale='viridis')
+    true_values = evaluate_earth_model_ensemble(true_gan_output,
+                                                compute_geobody_sizes=True)
+    true_values_np = true_values.detach().cpu().numpy()
+    fig = px.imshow(true_values_np[:, :, :].mean(axis=0),
+                    aspect='auto',
+                    color_continuous_scale=t_cont,
+                    zmin=value_range[0],
+                    zmax=value_range[1])
+    # fig = px.imshow(1.*np_gan_output[0,1,:,:]+0.5*np_gan_output[0,2,:,:], aspect='auto', color_continuous_scale='viridis')
 
 
 # Position the colorbar horizontally below the figure
@@ -221,24 +227,30 @@ if st.checkbox('Show Human suggestion'):
 
 
 def compute_and_apply_robot_suggestion(pessimistic=False):
+    # todo maybe we want to remove the if and just pass the argument
     if pessimistic:
         # pessimistic
-        next_optimal, _ = pathfinder().run(torch.tensor(state, dtype=torch.float32).to(device),
-                                           start_position,
-                                           true_sim.simulator.NNmodel.gan_evaluator)
+        next_optimal, paths = pathfinder().no_gan_run(
+            weighted_images=values_ensemble_torch,
+            start_point=start_position,
+            recompute_optimal_paths_from_next=False,
+            pessimistic=True
+        )
     else:
         # optimistic
         next_optimal, paths = pathfinder().no_gan_run(
             weighted_images=values_ensemble_torch,
             start_point=start_position,
-            recompute_optimal_paths_from_next=True
+            recompute_optimal_paths_from_next=True,
+            pessimistic=False
+
         )
         # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32).to(device),
         #                                    start_position,
         #                                    true_sim.simulator.NNmodel.gan_evaluator)
     return next_optimal, paths
 
-if st.checkbox('Show Optimistic DP suggestion'):
+if st.checkbox('Show Optimistic DP suggestion and future paths'):
     # let's always show paths with the suggestion
     flags_string += "_optimistic"
     # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
@@ -257,10 +269,10 @@ if st.checkbox('Show Optimistic DP suggestion'):
 
     # optimal_paths = [perform_dynamic_programming(value_ensemble[j, :, :], next_optimal,
     #                  cost_vector=pathfinder().get_cost_vector())[2] for j in range(state.shape[1])]
-    optimal_paths = paths
+    optimal_path = paths
     # plot the optimal paths in the plotly figure
     for j in range(state.shape[1]):
-        path_rows, path_cols = zip(*(optimal_paths[j]))
+        path_rows, path_cols = zip(*(optimal_path[j]))
         noise_mult = 0.1
         # noise_mult = 0
         path_rows_perturbed = [el + noise_mult * np.random.randn() for el in path_rows]
@@ -269,13 +281,23 @@ if st.checkbox('Show Optimistic DP suggestion'):
                        line=dict(color='black', width=0.5),
                        showlegend=False))
 
-if st.checkbox('Show Pessimistic DP suggestion'):
+if st.checkbox('Show Pessimistic DP suggestion and the future path'):
     flags_string += "_pessimistic"
     # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
-    next_optimal = compute_and_apply_robot_suggestion(pessimistic=True)
+    next_optimal, paths = compute_and_apply_robot_suggestion(pessimistic=True)
     fig.add_scatter(x=[next_optimal[1]], y=[next_optimal[0]], mode='markers',
                     marker=dict(color='red', size=10, symbol='star'),
                     name='PDP suggestion')
+    optimal_path = paths
+    # plot the optimal paths in the plotly figure
+    path_rows, path_cols = zip(*(optimal_path[0]))
+    # noise_mult = 0.1
+    # # noise_mult = 0
+    # path_rows_perturbed = [el + noise_mult * np.random.randn() for el in path_rows]
+    fig.add_trace(
+        go.Scatter(x=path_cols, y=path_rows, mode='lines',
+                   line=dict(color='red', width=2),
+                   showlegend=False))
 
 
 
