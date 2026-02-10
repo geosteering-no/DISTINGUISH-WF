@@ -173,47 +173,46 @@ fig = px.imshow(value_ensemble[:, :, :].mean(axis=0),
                 zmax=value_range[1])
 # fig = px.imshow(facies_ensemble[0, :, :], aspect='auto', color_continuous_scale='viridis')
 
+true_values_from_cheat = None
 if st.checkbox('Cheat!'):
     # true_gan_output, facies_output = get_gan_truth(true_sim.latent_synthetic_truth)
     true_gan_output = true_sim.simulator.NNmodel.eval_gan(true_sim.latent_synthetic_truth)
-    true_values = evaluate_earth_model_ensemble(true_gan_output,
-                                                compute_geobody_sizes=True)
-    true_values_np = true_values.detach().cpu().numpy()
+    true_values_from_cheat = evaluate_earth_model_ensemble(true_gan_output,
+                                                           compute_geobody_sizes=True)
+    true_values_np = true_values_from_cheat.detach().cpu().numpy()
     fig = px.imshow(true_values_np[:, :, :].mean(axis=0),
                     aspect='auto',
                     color_continuous_scale=t_cont,
                     zmin=value_range[0],
                     zmax=value_range[1])
 
-    next_optimal, paths = pathfinder().no_gan_run(
-        weighted_images=true_values,
-        start_point=start_position
-    )
-    # fig = px.imshow(1.*np_gan_output[0,1,:,:]+0.5*np_gan_output[0,2,:,:], aspect='auto', color_continuous_scale='viridis')
-    fig.add_scatter(x=[next_optimal[1]], y=[next_optimal[0]], mode='markers',
-                    marker=dict(color='white', size=10, symbol='star'),
-                    name='Cheat!')
-    optimal_path = paths
-    # plot the optimal paths in the plotly figure
-    path_rows, path_cols = zip(*(optimal_path[0]))
-    # noise_mult = 0.1
-    # # noise_mult = 0
-    # path_rows_perturbed = [el + noise_mult * np.random.randn() for el in path_rows]
-    fig.add_trace(
-        go.Scatter(x=path_cols, y=path_rows, mode='lines',
-                   line=dict(color='white', width=2),
-                   showlegend=False))
 
 
 # Position the colorbar horizontally below the figure
-fig.update_layout(coloraxis_colorbar=dict(
-    orientation='h',
-    x=0.5,
-    y=-0.2,
-    xanchor='center',
-    yanchor='top',
-    len=0.8,  # Length of the colorbar
-))
+fig.update_layout(
+    coloraxis_colorbar=dict(
+        orientation='h',
+        x=0.5,
+        y=-0.3,
+        xanchor='center',
+        yanchor='top',
+        len=0.8,  # Length of the colorbar
+        title="Value"
+    ),
+    legend=dict(
+        orientation="v",  # column
+        yanchor="top",
+        y=1.4,
+        xanchor="center",
+        x=0.5,
+    ),
+    margin=dict(t=120,
+                r=30,
+                l=30
+                ), # reserved for legend
+    plot_bgcolor="lightgray",
+    paper_bgcolor="lightgray",
+)
 
 # this draws only the current initial bit position
 fig.add_scatter(x=[start_position[1]], y=[start_position[0]],
@@ -240,7 +239,7 @@ if st.checkbox('Show Human suggestion'):
     user_step_select = st.radio('What is the next step?', ['Drill up', 'Drill ahead', 'Drill down'])
     next_position = apply_user_input(user_step_select)
     fig.add_scatter(x=[next_position[1]], y=[next_position[0]], mode='markers',
-                    marker=dict(color='blue', size=10), name='Next Position')
+                    marker=dict(color='blue', size=10), name='Human Selection')
 
 
 
@@ -317,6 +316,27 @@ if st.checkbox('Show Pessimistic DP suggestion and the future path'):
                    line=dict(color='red', width=2),
                    showlegend=False))
 
+if true_values_from_cheat is not None:
+    # the cheat was activated
+    # we draw trajectories over the rest of the interface
+    next_optimal, paths = pathfinder().no_gan_run(
+        weighted_images=true_values_from_cheat,
+        start_point=start_position
+    )
+    # fig = px.imshow(1.*np_gan_output[0,1,:,:]+0.5*np_gan_output[0,2,:,:], aspect='auto', color_continuous_scale='viridis')
+    fig.add_scatter(x=[next_optimal[1]], y=[next_optimal[0]], mode='markers',
+                    marker=dict(color='white', size=10, symbol='star'),
+                    name='Cheat!')
+    optimal_path = paths
+    # plot the optimal paths in the plotly figure
+    path_rows, path_cols = zip(*(optimal_path[0]))
+    # noise_mult = 0.1
+    # # noise_mult = 0
+    # path_rows_perturbed = [el + noise_mult * np.random.randn() for el in path_rows]
+    fig.add_trace(
+        go.Scatter(x=path_cols, y=path_rows, mode='lines',
+                   line=dict(color='white', width=2),
+                   showlegend=False))
 
 
 path_rows, path_cols = zip(*(st.session_state['path']))
