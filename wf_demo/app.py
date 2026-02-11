@@ -208,8 +208,8 @@ fig.update_layout(
         x=0.5,
     ),
     margin=dict(t=120,
-                r=30,
-                l=30
+                l=80,
+                r=40
                 ), # reserved for legend
     plot_bgcolor="lightgray",
     paper_bgcolor="lightgray",
@@ -403,19 +403,29 @@ fig.update_xaxes(
     ticktext=x_labels,
     title_text='VS'
 )
+fig.update_xaxes(range=[-0.5, value_ensemble.shape[2] - 0.5])
+
 y_values = list(ind*10 for ind in range(1,7))
-y_labels = list(f"x{300+int(x/2)} m" for x in x_values)
+y_labels = list(f"x{300+int(x/2)} m" for x in y_values)
 fig.update_yaxes(
     tickvals=y_values,
     ticktext=y_labels,
-    title_text='TVD'
+    title_text='TVD',
+    showgrid=False,
+    zeroline=False,
+    mirror=False,
+    minor_ticks=""
 )
 
 cur_location = st.session_state['path'][-1]
-fig.write_image(f"figures/output_{int(cur_location[1])}_{int(cur_location[0])}.png")
-
 st.plotly_chart(fig, use_container_width=True)
 
+fig.write_image(f"figures/output_{int(cur_location[1])}_{int(cur_location[0])}{flags_string}.png",
+                width=700,
+                height=450,
+                scale=4
+                )
+print(f"output_{int(cur_location[1])}_{int(cur_location[0])}{flags_string} saved!")
 
 
 col1, col2, col3 = st.columns(3)
