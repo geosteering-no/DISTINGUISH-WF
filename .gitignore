@@ -233,3 +233,5 @@ wf_demo/figures/
 data/SynthTruth_updated_*.png
 
 batch_run/figures/
+
+wf_demo/weights_cache/

@@ -1,15 +1,51 @@
 import numpy as np
 import torch
+from pathlib import Path
+from urllib.request import urlretrieve
 
-weights_folder = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/em/{}.pth?ref_type=heads"
-scalers_folder = weights_folder
-full_em_model_file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/em/checkpoint_770.pth?ref_type=heads"
+weights_folder_url = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/em/{}.pth?ref_type=heads"
+full_em_model_file_name_url = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/em/checkpoint_770.pth?ref_type=heads"
+gan_file_name_url = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/gan/netG_epoch_4662.safetensors"
+
+
+# --- cache dir ---
+CACHE_DIR = Path("./weights_cache")
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+def download(url: str, dst: Path):
+    if not dst.exists():
+        urlretrieve(url, dst)
+
+# 1) Full EM checkpoint
+local_full_em_model_file_name = CACHE_DIR / "checkpoint_770.pth"
+download(full_em_model_file_name_url, local_full_em_model_file_name)
+
+# 2) GAN weights
+local_gan_file_name = CACHE_DIR / "netG_epoch_4662.safetensors"
+download(gan_file_name_url, local_gan_file_name)
+
+# 3) EM scalers (fill with actual {} keys you use)
+scaler_keys = ["min_x", "max_x", "min_y", "max_y"]
+
+local_em_dir = CACHE_DIR / "em"
+local_em_dir.mkdir(exist_ok=True)
+
+for name in scaler_keys:
+    url = weights_folder_url.format(name)
+    download(url, local_em_dir / f"{name}.pth")
+
+# --- switch to local paths ---
+weights_folder = str(local_em_dir)
+full_em_model_file_name = str(local_full_em_model_file_name)
+gan_file_name = str(local_gan_file_name)
+
 proxi_input_shape = (3,128)
 proxi_output_shape = (6, 18)
 gan_input_dim = 60
-gan_file_name = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-/raw/master/gan/netG_epoch_4662.safetensors"
 gan_output_height = 64
 gan_num_channals = 6
+
+scalers_folder = weights_folder
 
 input_dict = {
     'file_name': gan_file_name,
