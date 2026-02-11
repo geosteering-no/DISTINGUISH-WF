@@ -287,7 +287,13 @@ if st.checkbox('Show Greedy suggestion'):
         greedy=True
     )
     if next_optimal_g[0] is None or next_optimal_g[1] is None:
-        pass
+        fig.add_scatter(
+            x=[None],
+            y=[None],
+            mode="markers",
+            marker=dict(color='black', size=10, symbol='circle-open'),
+            name="Greedy Robot recommends to stop drilling"
+        )
     else:
         fig.add_scatter(x=[next_optimal_g[1]], y=[next_optimal_g[0]], mode='markers',
                         marker=dict(color='black', size=10, symbol='circle-open'),
@@ -302,7 +308,13 @@ if st.checkbox('Show Optimistic DP suggestion and future paths'):
         pessimistic=False
     )
     if next_optimal_o[0] is None or next_optimal_o[1] is None:
-        pass
+        fig.add_scatter(
+            x=[None],
+            y=[None],
+            mode="markers",
+            marker=dict(color="black", size=10, symbol="cross"),
+            name="Optimistic DP Robot recommends to stop drilling"
+        )
     else:
         fig.add_scatter(x=[next_optimal_o[1]], y=[next_optimal_o[0]], mode='markers',
                         marker=dict(color='black', size=10, symbol='cross'),
@@ -333,7 +345,13 @@ if st.checkbox('Show Pessimistic DP suggestion and the future path'):
     # next_optimal, _ = pathfinder().run(torch.tensor(state,dtype=torch.float32), start_position)
     next_optimal_p, paths = compute_and_apply_robot_suggestion(pessimistic=True)
     if next_optimal_p[0] is None or next_optimal_p[1] is None:
-        pass
+        fig.add_scatter(
+            x=[None],
+            y=[None],
+            mode="markers",
+            marker=dict(color='red', size=10, symbol='x'),
+            name="Pessimistic DP Robot recommends to stop drilling"
+        )
     else:
         fig.add_scatter(x=[next_optimal_p[1]], y=[next_optimal_p[0]], mode='markers',
                         marker=dict(color='red', size=10, symbol='x'),
