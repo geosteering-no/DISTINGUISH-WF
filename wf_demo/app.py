@@ -130,8 +130,7 @@ def da(state, start_position):
                               'vec_size': 60,
                               'reporttype': 'pos',
                               'reportpoint': [int(el) for el in range(1)],
-                              'datatype': [('6kHz','83ft'),('12kHz','83ft'),('24kHz','83ft'),
-                                           ('24kHz','43ft'),('48kHz','43ft'),('96kHz','43ft')]
+                              'datatype': input_dict['datatype']
                               })
         # do inversion
         sim_ensemble.update_bit_pos([start_position])

@@ -20,12 +20,21 @@ class SyntheticTruth:
         self.simulator = GeoSim(input_dict)
 
         self.simulator.l_prim = [0]
-        self.simulator.all_data_types = [('6kHz', '83ft'), ('12kHz', '83ft'), ('24kHz', '83ft'), ('24kHz', '43ft'), ('48kHz', '43ft'), ('96kHz', '43ft')]
+        self.simulator.all_data_types = input_dict['datatype']
 
         self.latent_synthetic_truth = latent_truth_vector
         # load_default_latent_tensor().to(device))
 
+        # intialize
+        l = open('../data/datatyp.csv', 'w', newline='')
+        writer5 = csv.writer(l)
+        writer5.writerow([str(el) for el in self.simulator.all_data_types])
+        l.close()
 
+        k = open('../data/assim_index.csv', 'w', newline='')
+        for c, _ in enumerate([0]):
+            k.writelines(str(c) + '\n')
+        k.close()
 
     def acquire_data(self, keys):
         # todo fix empty index vector
@@ -43,7 +52,10 @@ class SyntheticTruth:
         logs = self.simulator.NNmodel.forward(self.latent_synthetic_truth, index_vector, output_transien_results=False)
 
         # here we need to use the bit_pos (but was bit_pos-1)
-        logs_np = logs.cpu().detach().numpy()[keys['bit_pos'][0][1],:,-8:]
+        if self.simulator.all_data_types == ['point']:
+            logs_np = logs.cpu().detach().numpy()[keys['bit_pos'][0][1],:]
+        else:
+            logs_np = logs.cpu().detach().numpy()[keys['bit_pos'][0][1],:,-8:]
         # todo describe which logs are used in the paper
 
         # bookkeeping
@@ -58,11 +70,15 @@ class SyntheticTruth:
         data = {}
         var = {}
         for count, di in enumerate(self.simulator.all_data_types):
-            freq, dist = di
-            data[(freq, dist)] = [logs_np[count, :]]
-            # var[(freq, dist)] = [[['REL', 10] if abs(el) > abs(0.1*np.mean(values)) else ['ABS', (0.1*np.mean(values))**2] for el in val] for val in values]
-            var[(freq, dist)] = [[['ABS', (0.1 * np.max(np.abs(val))) ** 2] for val in logs_np[count, :]]]
-            # var[(freq, dist)] = [[['REL', 0.1] for val in logs_np[count, :]]]
+            if self.simulator.all_data_types == ['point']:
+                data[di] = [logs_np]
+                var[di] = [['ABS', [(0.001*np.mean(val))**2 for val in logs_np]]]
+            else:
+                freq, dist = di
+                data[(freq, dist)] = [logs_np[count, :]]
+                # var[(freq, dist)] = [[['REL', 10] if abs(el) > abs(0.1*np.mean(values)) else ['ABS', (0.1*np.mean(values))**2] for el in val] for val in values]
+                var[(freq, dist)] = [['ABS' ,[(0.1 * np.max(np.abs(val))) ** 2 for val in logs_np[count, :]]]]
+                # var[(freq, dist)] = [[['REL', 0.1] for val in logs_np[count, :]]]
 
         df = pd.DataFrame(data, columns=self.simulator.all_data_types, index=[0])
         df.index.name = 'tvd'
