@@ -14,7 +14,7 @@ dependencies = [
     "pathoptim @ git+https://github.com/geosteering-no/DSUP.git",
     "GAN-EM-model @ git+https://github.com/geosteering-no/GAN-EM-model.git",
     "udar_proxi @ git+https://github.com/KriFos1/UTA-proxy-final.git",
-    "PET" @ git+https://github.com/Python-Ensemble-Toolbox/PET.git
+    "PET" @ git+https://github.com/Python-Ensemble-Toolbox/PET.git"
 ]
 
 [project.scripts]
