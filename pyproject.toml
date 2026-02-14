@@ -1,6 +1,6 @@
 [project]
 name = "wf-demo"
-version = "1.0.0"
+version = "2.0.0"
 description = "The open DISTINGUISH Workflow"
 authors = [{ name = "Kristian Fossum", email = "krfo@norceresearch.no" }]
 readme = "README.md"
@@ -9,10 +9,12 @@ dependencies = [
     "seaborn",
     "streamlit",
     "plotly",
+    "kaleido",
     "PET-GAN-LOG @ git+https://github.com/geosteering-no/PET-GAN-LOG.git",
     "pathoptim @ git+https://github.com/geosteering-no/DSUP.git",
     "GAN-EM-model @ git+https://github.com/geosteering-no/GAN-EM-model.git",
-    "udar_proxi @ git+https://github.com/KriFos1/UTA-proxy-final.git"
+    "udar_proxi @ git+https://github.com/KriFos1/UTA-proxy-final.git",
+    "PET" @ git+https://github.com/Python-Ensemble-Toolbox/PET.git
 ]
 
 [project.scripts]
