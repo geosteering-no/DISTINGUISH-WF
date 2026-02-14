@@ -5,6 +5,10 @@ import subprocess
 import os
 import sys
 
+# check if figure directory exists, if not create it
+if not os.path.exists("figures"):
+    os.makedirs("figures")
+
 def main():
     app_path = os.path.join(os.path.dirname(__file__), "app.py")
     # Launch Streamlit with the app
