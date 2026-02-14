@@ -138,7 +138,7 @@ def da(state, start_position):
         assimilation = Assimilate(analysis)
         assimilation.run()
 
-        state = np.load('posterior_state_estimate.npz')['x']  # import the posterior state estimate
+        state = np.load('SaveOutputs/posterior_state_estimate.npz')['x']  # import the posterior state estimate
         return state
 
 facies_ensemble_torch = get_gan_earth(state)
