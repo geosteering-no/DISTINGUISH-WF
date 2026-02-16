@@ -400,9 +400,15 @@ x_labels = list(f"{x*10} m" for x in x_values)
 fig.update_xaxes(
     tickvals=x_values,
     ticktext=x_labels,
-    title_text='VS'
+    title_text='VS',
+    showgrid=False,
+    zeroline=False,
+    mirror=False,
+    minor_ticks=""
 )
+# TODO check if the axes shape indexes should we swapped - they are the same for now
 fig.update_xaxes(range=[-0.5, value_ensemble.shape[2] - 0.5])
+
 
 y_values = list(ind*10 for ind in range(1,7))
 y_labels = list(f"x{300+int(x/2)} m" for x in y_values)
@@ -415,6 +421,9 @@ fig.update_yaxes(
     mirror=False,
     minor_ticks=""
 )
+
+# TODO check if the axes shape indexes should we swapped - they are the same for now
+fig.update_yaxes(range=[-0.5, value_ensemble.shape[1] - 0.5])
 
 cur_location = st.session_state['path'][-1]
 st.plotly_chart(fig, use_container_width=True)
