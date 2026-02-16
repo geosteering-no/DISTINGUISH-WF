@@ -331,12 +331,12 @@ if st.checkbox('Show Optimistic DP suggestion and future paths'):
         # plot the optimal paths in the plotly figure
         for j in range(state.shape[1]):
             path_rows, path_cols = zip(*(optimal_path[j]))
-            noise_mult = 0.1
+            noise_mult = 0.48
             # noise_mult = 0
-            path_rows_perturbed = [el + noise_mult * np.random.randn() for el in path_rows]
+            path_rows_perturbed = [el + noise_mult * np.random.uniform(-noise_mult, noise_mult) for el in path_rows]
             fig.add_trace(
                 go.Scatter(x=path_cols, y=path_rows_perturbed, mode='lines',
-                           line=dict(color='black', width=0.5),
+                           line=dict(color='black', width=0.3),
                            showlegend=False))
 
 if st.checkbox('Show Pessimistic DP suggestion and the future path'):
