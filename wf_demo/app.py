@@ -84,7 +84,7 @@ else:
     st.session_state['path'].append(start_position)
 
 # toggle first step
-def toggle_first_step():
+def toggle_first_step_and_rerun():
     st.session_state['first_position'] = False
     st.rerun()
 
@@ -427,30 +427,72 @@ fig.write_image(f"figures/output_{int(cur_location[1])}_{int(cur_location[0])}{f
 print(f"output_{int(cur_location[1])}_{int(cur_location[0])}{flags_string} saved!")
 
 
+def drill_like_human(state):
+    next_position = apply_user_input(0)
+    st.session_state.start_position_state = next_position
+    print(f"Shape of state for DA {state.shape}")
+    state = da(state, next_position)
+    st.session_state.ensemble_state = state
+    return next_position
+
+
+def drill_like_optimist_robot(state, next_optimal_o):
+    if next_optimal_o is None:
+        next_optimal_o, _ = compute_and_apply_robot_suggestion(pessimistic=False)
+    st.session_state.start_position_state = next_optimal_o
+    print(f"Shape of state for DA {state.shape}")
+    state = da(state, next_optimal_o)
+    st.session_state.ensemble_state = state
+    return next_optimal_o
+
+
+def drill_like_pessimist_robot(state, next_optimal_p):
+    if next_optimal_p is None:
+        next_optimal_p, _ = compute_and_apply_robot_suggestion(pessimistic=True)
+    st.session_state.start_position_state = next_optimal_p
+    print(f"Shape of state for DA {state.shape}")
+    state = da(state, next_optimal_p)
+    st.session_state.ensemble_state = state
+    return next_optimal_p
+
+
 col1, col2, col3 = st.columns(3)
 with col1:
     if st.button('Drill like a Human'):
-        next_position = apply_user_input(0)
-        st.session_state.start_position_state = next_position
-        print(f"Shape of state for DA {state.shape}")
-        state = da(state, next_position)
-        st.session_state.ensemble_state = state
-        toggle_first_step()
+        drill_like_human(state)
+        toggle_first_step_and_rerun()
 with col2:
     if st.button('Drill like Optimistic Robot'):
-        if next_optimal_o is None:
-            next_optimal_o, _ = compute_and_apply_robot_suggestion(pessimistic=False)
-        st.session_state.start_position_state = next_optimal_o
-        print(f"Shape of state for DA {state.shape}")
-        state = da(state, next_optimal_o)
-        st.session_state.ensemble_state = state
-        toggle_first_step()
+        drill_like_optimist_robot(state, next_optimal_o)
+        toggle_first_step_and_rerun()
 with col3:
     if st.button('Drill like Pessimistic Robot'):
-        if next_optimal_p is None:
-            next_optimal_p, _ = compute_and_apply_robot_suggestion(pessimistic=True)
-        st.session_state.start_position_state = next_optimal_p
-        print(f"Shape of state for DA {state.shape}")
-        state = da(state, next_optimal_p)
-        st.session_state.ensemble_state = state
-        toggle_first_step()
+        drill_like_pessimist_robot(state, next_optimal_p)
+        toggle_first_step_and_rerun()
+
+
+def should_stop_autopilot(start_pos, opt_result):
+    print("Checking exit conditions")
+    print(f'Starting position {start_pos}')
+    print(f'Optimization result {opt_result}')
+    print("Going forward")
+    if opt_result is None:
+        return True
+    if opt_result[0] is None or opt_result[1] is None:
+        return True
+    if opt_result[1] == start_pos[1]:
+        return True
+    return False
+
+
+auto_col1, auto_col2 = st.columns(2)
+with auto_col1:
+    if st.checkbox('Activate Optimistic Robot Autopilot', key="auto_opt"):
+        result = drill_like_optimist_robot(state, next_optimal_o)
+with auto_col2:
+    if st.checkbox('Activate Pessimistic Robot Autopilot', key="auto_pes"):
+        result = drill_like_pessimist_robot(state, next_optimal_p)
+        if should_stop_autopilot(start_position, result):
+            st.session_state.auto_pes = False
+        else:
+            toggle_first_step_and_rerun()
