@@ -437,8 +437,6 @@ def drill_like_human(state):
 
 
 def drill_like_optimist_robot(state, next_optimal_o):
-    if next_optimal_o is None:
-        next_optimal_o, _ = compute_and_apply_robot_suggestion(pessimistic=False)
     st.session_state.start_position_state = next_optimal_o
     print(f"Shape of state for DA {state.shape}")
     state = da(state, next_optimal_o)
@@ -447,8 +445,6 @@ def drill_like_optimist_robot(state, next_optimal_o):
 
 
 def drill_like_pessimist_robot(state, next_optimal_p):
-    if next_optimal_p is None:
-        next_optimal_p, _ = compute_and_apply_robot_suggestion(pessimistic=True)
     st.session_state.start_position_state = next_optimal_p
     print(f"Shape of state for DA {state.shape}")
     state = da(state, next_optimal_p)
@@ -463,10 +459,14 @@ with col1:
         toggle_first_step_and_rerun()
 with col2:
     if st.button('Drill like Optimistic Robot'):
+        if next_optimal_o is None:
+            next_optimal_o, _ = compute_and_apply_robot_suggestion(pessimistic=False)
         drill_like_optimist_robot(state, next_optimal_o)
         toggle_first_step_and_rerun()
 with col3:
     if st.button('Drill like Pessimistic Robot'):
+        if next_optimal_p is None:
+            next_optimal_p, _ = compute_and_apply_robot_suggestion(pessimistic=True)
         drill_like_pessimist_robot(state, next_optimal_p)
         toggle_first_step_and_rerun()
 
@@ -488,11 +488,20 @@ def should_stop_autopilot(start_pos, opt_result):
 auto_col1, auto_col2 = st.columns(2)
 with auto_col1:
     if st.checkbox('Activate Optimistic Robot Autopilot', key="auto_opt"):
-        result = drill_like_optimist_robot(state, next_optimal_o)
+        if next_optimal_o is None:
+            next_optimal_o, _ = compute_and_apply_robot_suggestion(pessimistic=False)
+        if should_stop_autopilot(start_position, next_optimal_o):
+            pass
+        else:
+            drill_like_optimist_robot(state, next_optimal_o)
+            toggle_first_step_and_rerun()
 with auto_col2:
     if st.checkbox('Activate Pessimistic Robot Autopilot', key="auto_pes"):
-        result = drill_like_pessimist_robot(state, next_optimal_p)
-        if should_stop_autopilot(start_position, result):
-            st.session_state.auto_pes = False
+        if next_optimal_p is None:
+            next_optimal_p, _ = compute_and_apply_robot_suggestion(pessimistic=True)
+        if should_stop_autopilot(start_position, next_optimal_p):
+            pass
+            # st.session_state.auto_pes_ = False
         else:
+            drill_like_pessimist_robot(state, next_optimal_p)
             toggle_first_step_and_rerun()
