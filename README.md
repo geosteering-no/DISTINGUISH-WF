@@ -9,27 +9,10 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e .
 ```
-### Work-around for a special PET version
-2. Clone a fork of PET (not the main one): 
-```
-git clone git@github.com:KriFos1/PET.git kriPET
-```
-3. Change branch to `pipt-structure`
-```
-git checkout -b pipt-structure origin/pipt-structure
-```
 
-Now the custom PET is in kriPET folder. Let's assume one above the main code.
-### Continue installation normally
+## Notes on PET
+In earlier version ta special version of PET was required. This is not the case, and PET will be packaged under #1.
 
-4. Install the custom PET in the DISTINGUISH-WF folder (activating the venv if not already), e.g.
-```
-cd ../DISTINGUISH-WF
-source .venv/bin/activate
-```
-```
-pip install -e ../kriPET
-```
 
 ## Running
 Make some initial data by
@@ -46,6 +29,21 @@ Run by typing in the terminal:
 cd wf_demo
 run_WF
 ```
+
+## Changing the simulator
+The WF supports two data-types.
+1. UDAR
+2. Point measurements
+
+The data type is selected by (un-)commenting in default_load.py
+
+```
+    #'datatype': ['point']
+    'datatype': [('6kHz','83ft'),('12kHz','83ft'),('24kHz','83ft'),
+                 ('24kHz','43ft'),('48kHz','43ft'),('96kHz','43ft')]
+```
+
+Degree of measurement error is modified in write_data_var.py
 
 ## Training data available
 
