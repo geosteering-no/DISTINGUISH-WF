@@ -35,7 +35,7 @@ The WF supports two data-types.
 1. UDAR
 2. Point measurements
 
-The data type is selected by (un-)commenting in default_load.py
+The data type for the demo can be selected by (un-)commenting in `wf_demo/default_load.py`
 
 ```
     #'datatype': ['point']
@@ -43,7 +43,7 @@ The data type is selected by (un-)commenting in default_load.py
                  ('24kHz','43ft'),('48kHz','43ft'),('96kHz','43ft')]
 ```
 
-Degree of measurement error is modified in write_data_var.py
+The degree of measurement error is modified in `wf_demo/write_data_var.py`
 
 ## Training data available
 
