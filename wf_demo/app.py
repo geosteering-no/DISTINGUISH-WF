@@ -208,7 +208,8 @@ fig.update_layout(
     ),
     margin=dict(t=120,
                 l=80,
-                r=40
+                r=40,
+                b=40
                 ), # reserved for legend
     plot_bgcolor="lightgray",
     paper_bgcolor="lightgray",
@@ -334,6 +335,7 @@ if st.checkbox('Show Optimistic DP suggestion and future paths'):
             noise_mult = 0.48
             # noise_mult = 0
             path_rows_perturbed = [el + noise_mult * np.random.uniform(-noise_mult, noise_mult) for el in path_rows]
+            # path_rows_perturbed = [min(63., max(0., el)) for el in path_rows_perturbed]
             fig.add_trace(
                 go.Scatter(x=path_cols, y=path_rows_perturbed, mode='lines',
                            line=dict(color='black', width=0.3),
@@ -407,7 +409,11 @@ fig.update_xaxes(
     minor_ticks=""
 )
 # TODO check if the axes shape indexes should we swapped - they are the same for now
-fig.update_xaxes(range=[-0.5, value_ensemble.shape[2] - 0.5])
+fig.update_xaxes(
+    autorange=False,
+    range=[-0.5, value_ensemble.shape[2] - 0.5],
+    fixedrange=True,
+)
 
 
 y_values = list(ind*10 for ind in range(1,7))
@@ -423,7 +429,11 @@ fig.update_yaxes(
 )
 
 # TODO check if the axes shape indexes should we swapped - they are the same for now
-fig.update_yaxes(range=[-0.5, value_ensemble.shape[1] - 0.5])
+fig.update_yaxes(
+    autorange=False,
+    range=[value_ensemble.shape[1] - 0.5, -0.5],
+    fixedrange=True,
+)
 
 cur_location = st.session_state['path'][-1]
 st.plotly_chart(fig, use_container_width=True)
