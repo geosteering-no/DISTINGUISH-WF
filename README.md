@@ -80,7 +80,7 @@ Geosteering Scenarios"
 
 #### BibTeX
 
-```
+```bibtex
 @inproceedings{Alyaev2024ECMORDISTINGUISH,
   author    = {Alyaev, Sergey and Fossum, Kristian and Djecta, Hibat Errahmen and Tveranger, Jan and Elsheikh, Ahmed H.},
   title     = {DISTINGUISH Workflow: a New Paradigm of Dynamic Well Placement Using Generative Machine Learning},
