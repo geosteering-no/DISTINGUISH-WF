@@ -50,7 +50,7 @@ The degree of measurement error is modified in `wf_demo/write_data_var.py`
 For GAN training:
 - https://github.com/geosteering-no/geosteering-gan-training-2020
 
-For EM training:
+For UDAR training:
 - https://zenodo.org/records/17776294
 
 ## Cite as
