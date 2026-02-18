@@ -55,13 +55,30 @@ For UDAR training:
 
 ## Cite as
 
-Introduced in:
+### Repository 
+- Alyaev, S., Fossum, K., & Djecta, H. E. (2026). **Distinguish Workflow Demo**. GitHub repository. https://github.com/geosteering-no/DISTINGUISH-WF.
+
+#### BibTeX
+
+```bibtex
+@misc{alyaev2026distinguishwf,
+  author       = {Alyaev, Sergey and Fossum, Kristian and Djecta, Hibat Errahmen},
+  title        = {Distinguish Workflow Demo},
+  howpublished = {GitHub repository},
+  year         = {2026},
+  url          = {https://github.com/geosteering-no/DISTINGUISH-WF}
+}
+```
+
+
+
+### Introduced in
 - Alyaev, S., Fossum, K., Djecta, H. E., Tveranger, J., & Elsheikh, A. H. (2024). **DISTINGUISH Workflow: a New Paradigm of Dynamic Well Placement Using Generative Machine Learning**. *In EAGE ECMOR 2024*, 2024. https://doi.org/10.3997/2214-4609.202437018. (arXiv: https://arxiv.org/abs/2503.08509) 
 
 The article is under peer review with the name "A Generative-AI Modeling Framework for Explainable Decision Support in Complex
 Geosteering Scenarios"
 
-### BibTeX
+#### BibTeX
 
 ```
 @inproceedings{Alyaev2024ECMORDISTINGUISH,
