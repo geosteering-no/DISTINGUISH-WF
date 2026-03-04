@@ -55,9 +55,11 @@ input_dict = {
     'reportpoint': [int(el) for el in range(1)],
     'scalers_folder':scalers_folder,
     'bit_pos':[(32,0)],
-    #'datatype': ['point']
+    #'datatype': ['point'],
     'datatype': [('6kHz','83ft'),('12kHz','83ft'),('24kHz','83ft'),
-                 ('24kHz','43ft'),('48kHz','43ft'),('96kHz','43ft')]
+                 ('24kHz','43ft'),('48kHz','43ft'),('96kHz','43ft')],
+    'parallel_internal': True,
+    'parallel':250
     }
 
 def load_default_latent_tensor(realization_id: str ="C1"):

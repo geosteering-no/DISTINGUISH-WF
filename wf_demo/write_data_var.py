@@ -53,9 +53,9 @@ class SyntheticTruth:
 
         # here we need to use the bit_pos (but was bit_pos-1)
         if self.simulator.all_data_types == ['point']:
-            logs_np = logs.cpu().detach().numpy()[keys['bit_pos'][0][1],:]
+            logs_np = logs.cpu().detach().numpy()[0,keys['bit_pos'][0][1],:]
         else:
-            logs_np = logs.cpu().detach().numpy()[keys['bit_pos'][0][1],:,-8:]
+            logs_np = logs.cpu().detach().numpy()[0,keys['bit_pos'][0][1],:,-8:]
         # todo describe which logs are used in the paper
 
         # bookkeeping
