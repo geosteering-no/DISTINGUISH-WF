@@ -232,18 +232,7 @@ def apply_user_input(user_choice):
 
 flags_string = ""
 
-if st.checkbox('Show Human suggestion'):
-    flags_string += "_human"
-    user_selection_dy = st.slider(label='Select drilling direction', key='user_selection',
-                                  min_value=-1,
-                                  max_value=1,
-                                  value=int(0),
-                                  step=1)
-    # user_step_select = st.radio('What is the next step?', ['Drill up', 'Drill ahead', 'Drill down'])
-    # next_position = apply_user_input(user_step_select)
-    next_position = apply_user_input(user_selection_dy)
-    fig.add_scatter(x=[next_position[1]], y=[next_position[0]], mode='markers',
-                    marker=dict(color='blue', size=10), name='Human Selection')
+
 
 
 
@@ -368,6 +357,18 @@ if st.checkbox('Show Pessimistic DP suggestion and the future path'):
                        line=dict(color='red', width=2),
                        showlegend=False))
 
+if st.checkbox('Show Human controlls'):
+    flags_string += "_human"
+    user_selection_dy = st.slider(label='Select drilling direction', key='user_selection',
+                                  min_value=-1,
+                                  max_value=1,
+                                  value=int(0),
+                                  step=1)
+    # user_step_select = st.radio('What is the next step?', ['Drill up', 'Drill ahead', 'Drill down'])
+    # next_position = apply_user_input(user_step_select)
+    next_position = apply_user_input(user_selection_dy)
+    fig.add_scatter(x=[next_position[1]], y=[next_position[0]], mode='markers',
+                    marker=dict(color='blue', size=10), name='Human Selection')
 
 if true_values_from_cheat is not None:
     flags_string += "_cheat"
