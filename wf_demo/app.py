@@ -74,6 +74,20 @@ next_optimal_p = None
 
 true_sim = SyntheticTruth(latent_truth_vector=load_default_latent_tensor().to(device), device=device)
 
+
+def get_start():
+    raw = st.query_params.get("start", "31")
+    try:
+        start_y = int(raw)
+        if start_y > 63:
+            start_y = 63
+        if start_y < 0:
+            start_y = 0
+        return start_y
+    except (TypeError, ValueError):
+        return 31
+
+
 # Show a slider first to select the start position of the well
 if st.session_state.first_position:
     # state = np.load('../orig_prior_small.npz')['x']  # the prior latent vector
@@ -82,8 +96,10 @@ if st.session_state.first_position:
     # state_torch = load_default_latent_tensor().cpu()
     # state = state_torch.permute(1,0).numpy()
     print(f'State tensor shape {state.shape}')
-    start_position = (st.slider(label='Enter the horizontal start position of the well', key='start_position',
-                                min_value=0, max_value=64, value=int(31)), 0)
+    # start_position = (st.slider(label='Enter the horizontal start position of the well', key='start_position',
+    #                             min_value=0, max_value=64, value=int(31)), 0)
+    start_y = get_start()
+    start_position = (start_y, 0)
     st.session_state['path'] = [start_position]
 else:
     state = st.session_state.ensemble_state
