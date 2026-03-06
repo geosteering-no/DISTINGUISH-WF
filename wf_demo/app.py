@@ -34,7 +34,7 @@ import matplotlib
 from copy import deepcopy as dp
 import time
 
-from wf_demo.default_load import input_dict, load_default_latent_tensor, load_default_starting_ensemble_state
+from wf_demo.default_load import input_dict, load_default_latent_tensor, load_default_starting_ensemble_state, udar_data_type_array
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -58,7 +58,15 @@ if 'first_position' not in st.session_state:
     st.session_state['first_position'] = True
 # Also, plot the current state as a main feature of the app.
 
-dt = input_dict['datatype'] 
+
+# change overwrite measurement/data type if requested in the address line
+measurement_type_str = st.query_params.get("data")
+if measurement_type_str == 'point':
+    input_dict['datatype'] = ['point']
+else:
+    input_dict['datatype'] = udar_data_type_array
+
+dt = input_dict['datatype']
 data_type_str = ""
 if (isinstance(dt, list) and dt == ['point']):
     data_type_str = 'point'
@@ -113,7 +121,7 @@ def toggle_first_step_and_rerun():
 
 # plot the current state
 @st.cache_data
-def get_gan_earth(state):
+def get_gan_earth(state, input_dict):
     # make state into a tensor
     # TODO fix with passing device
     sim_ensemble = GeoSim(input_dict)
@@ -129,7 +137,7 @@ def get_gan_earth(state):
     return facies_ensemble
 
 @st.cache_data
-def da(state, start_position):
+def da(state, input_dict, start_position):
     num_decissions = 1  # 64 # number of decissions to make
 
     # start_position = (32, 0) # initial position of the well
@@ -164,7 +172,7 @@ def da(state, start_position):
         state = np.load('SaveOutputs/posterior_state_estimate.npz')['x']  # import the posterior state estimate
         return state
 
-facies_ensemble_torch = get_gan_earth(state)
+facies_ensemble_torch = get_gan_earth(state, input_dict)
 values_ensemble_torch = evaluate_earth_model_ensemble(facies_ensemble_torch, compute_geobody_sizes=True)
 # TODO get the correct visualization
 
@@ -474,7 +482,7 @@ def drill_like_human(state):
     next_position = apply_user_input(0)
     st.session_state.start_position_state = next_position
     print(f"Shape of state for DA {state.shape}")
-    state = da(state, next_position)
+    state = da(state, input_dict, next_position)
     st.session_state.ensemble_state = state
     return next_position
 
@@ -482,7 +490,7 @@ def drill_like_human(state):
 def drill_like_optimist_robot(state, next_optimal_o):
     st.session_state.start_position_state = next_optimal_o
     print(f"Shape of state for DA {state.shape}")
-    state = da(state, next_optimal_o)
+    state = da(state, input_dict, next_optimal_o)
     st.session_state.ensemble_state = state
     return next_optimal_o
 
@@ -490,7 +498,7 @@ def drill_like_optimist_robot(state, next_optimal_o):
 def drill_like_pessimist_robot(state, next_optimal_p):
     st.session_state.start_position_state = next_optimal_p
     print(f"Shape of state for DA {state.shape}")
-    state = da(state, next_optimal_p)
+    state = da(state, input_dict, next_optimal_p)
     st.session_state.ensemble_state = state
     return next_optimal_p
 
