@@ -57,7 +57,14 @@ value_range = [0., 10.]
 if 'first_position' not in st.session_state:
     st.session_state['first_position'] = True
 # Also, plot the current state as a main feature of the app.
-st.title('Distinguish Open Workflow')
+
+dt = input_dict['datatype'] 
+data_type_str = ""
+if (isinstance(dt, list) and dt == ['point']):
+    data_type_str = 'point'
+else:
+    data_type_str = 'UDAR'
+st.title(f'Distinguish Open Demo ({data_type_str})')
 # GMO refers to Generic Modern [UDAR] Observations
 
 next_optimal_o = None
