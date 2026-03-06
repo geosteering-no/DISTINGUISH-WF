@@ -237,3 +237,5 @@ batch_run/figures/
 wf_demo/weights_cache/
 
 wf_demo/SaveOutputs/
+
+data/weights_cache/
