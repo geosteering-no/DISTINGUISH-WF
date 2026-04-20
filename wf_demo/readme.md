@@ -17,6 +17,10 @@ run_WF --server.port 8555
 
 ## Suggested use-case quick links for digi2026 conference
 
+### Default case for Europe Subsurface Conference 2026 to compare optimization approaches
+
+http://localhost:8555
+
 ### For the UDAR digi2025 case
 
 http://localhost:8555/?start=22
