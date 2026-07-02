@@ -65,7 +65,7 @@ input_dict = {
     }
 
 
-
+# This method selects the realization from one of the presets in the root folder
 def load_default_latent_tensor(realization_id: str ="C1"):
     # my_latent_vec_np = np.random.normal(size=60)
     numpy_input = np.load(f"../chosen_realization_{realization_id}.npz")

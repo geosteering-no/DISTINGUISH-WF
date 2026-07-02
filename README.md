@@ -53,6 +53,12 @@ For GAN training:
 For UDAR training:
 - https://zenodo.org/records/17776294
 
+## Useful modifications for testing
+
+ - `chosen_realization_*.npz` contain latent vectors for synthetic truths. `C1` is used by default.
+ - `orig_prior_2024.npz` is a larger prior ensemble of latent vectors.
+ - `orig_prior_small.npz` is a smaller prior ensemble of latent vectors, less stable bet better for demonstrations.
+
 ## Cite as
 
 ### Repository 
