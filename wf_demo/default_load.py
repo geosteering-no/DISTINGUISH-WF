@@ -12,7 +12,11 @@ gan_file_name_url = "https://gitlab.norceresearch.no/saly/image_to_log_weights/-
 # --- adapt the upstream model chain to the smooth EM proxy weights ---
 # contract of the post_ecmor_jac-4th-k128_smooth weights:
 #   input  [b, w, 4, 128]: [ln(rh), ln(rv), one-hot bit position, drilling angle in degrees]
-#   output [b, w, 6, 10]
+#   output [b, w, 6, 10]: 6 tool configs x 10 B-field components
+#                         [Re/Im x Hxx, Hyy, Hzz, Hxz, Hzx]
+#   UDAR geosignals (8 per tool) are derived through the analytic mapping
+#   convert_bfield_to_udar_torch
+from udar_proxi.utils import convert_bfield_to_udar_torch
 from NeuralSim import image_to_log as _image_to_log
 from NeuralSim import vector_to_log as _vector_to_log
 from GeoSim import sim as _geosim_sim
@@ -61,6 +65,21 @@ def _smooth_convert_to_resistivity_format(self, images, index_vector):
 
 _vector_to_log.FullModel.convert_to_resistivity_format = _smooth_convert_to_resistivity_format
 
+_original_full_model_forward = _vector_to_log.FullModel.forward
+
+def _smooth_full_model_forward(self, x, index_vector, output_transien_results=False):
+    # the proxy predicts B-field components; map them analytically to UDAR geosignals
+    gan_output, resistivity_padded, response = _original_full_model_forward(
+        self, x, index_vector, output_transien_results=True
+    )
+    if response.shape[-1] == 10:
+        response = convert_bfield_to_udar_torch(response)  # [b, w, 6 tools, 8 geosignals]
+    if output_transien_results:
+        return gan_output, resistivity_padded, response
+    return response
+
+_vector_to_log.FullModel.forward = _smooth_full_model_forward
+
 def _smooth_call_sim(self, **kwargs):
     my_latent_vec_np = kwargs['x']
 
@@ -93,7 +112,7 @@ def _smooth_call_sim(self, **kwargs):
                 if key == 'point':
                     self.pred_data[sample_idx][prim_ind][key] = logs_np[sample_idx, self.bit_pos[0][1], :].flatten()
                 else:
-                    # the smooth proxy outputs the full width-10 measurement vector
+                    # last dim holds the 8 UDAR geosignals per tool config
                     self.pred_data[sample_idx][prim_ind][key] = logs_np[sample_idx, self.bit_pos[0][1], extract_index, :].flatten()
 
     return self.pred_data
