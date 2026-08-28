@@ -81,7 +81,7 @@ def plot_workflow_status(image, resistivity, logs, pad_top):
     # plotting the logs
     ax_logs.set_title(names[log_tool_index_in_use])
 
-    logs_np = logs.cpu().detach().numpy()[:, :, -8:]
+    logs_np = logs.cpu().detach().numpy()[:, :, :]
     # logs_to_plot = logs_np[:, i]  # take the first batch and first channel
     for j, config in enumerate(tool_configs):
         ax_logs.plot(logs_np[:, j, log_tool_index_in_use], label=config)
