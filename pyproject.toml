@@ -21,7 +21,7 @@ dependencies = [
     "GAN-EM-model @ git+https://github.com/geosteering-no/GAN-EM-model.git@feat/update_weights",
     "udar_proxi @ git+https://github.com/KriFos1/UTA-proxy-final.git@2fdb9a356ad2cf495c04eb402f272724cd9f00dd",
     "PET @ git+https://github.com/Python-Ensemble-Toolbox/PET.git@5660cf20ad70707704727689dee3ddd229646696",
-    "geostat @ git+https://github.com/Python-Ensemble-Toolbox/Geostatistics.git",
+    "geostat @ git+https://github.com/Python-Ensemble-Toolbox/Geostatistics@main",
 ]
 
 [project.scripts]
