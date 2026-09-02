@@ -25,7 +25,7 @@ http://localhost:8555
 
 http://localhost:8555/?start=22
 
-### For the point-EM measurement digi2025 case
+### For direct point data followed by UDAR
 
-http://localhost:8555/?start=22&data=point
-
+Open http://localhost:8555/?start=22 and select both `0D` and `1D` on the
+geosteering page.

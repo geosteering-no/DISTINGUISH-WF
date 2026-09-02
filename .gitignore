@@ -239,3 +239,8 @@ wf_demo/weights_cache/
 wf_demo/SaveOutputs/
 
 data/weights_cache/
+
+# App runtime caches and local tooling
+weights_cache/
+.vscode/
+graphify-out/

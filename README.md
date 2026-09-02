@@ -10,6 +10,26 @@ source .venv/bin/activate
 pip install -e .
 ```
 
+If an existing environment reports that `SmoothEMConvModel` cannot be imported,
+refresh the pinned UDAR proxy revision:
+
+```bash
+python -m pip install --upgrade --force-reinstall 'git+https://github.com/KriFos1/UTA-proxy-final.git@2fdb9a356ad2cf495c04eb402f272724cd9f00dd'
+```
+
+If `torchvision::nms` is missing during startup, reinstall Torch and Torchvision
+as the matched pair used by this project, then restart Streamlit:
+
+```bash
+python -m pip install --upgrade --force-reinstall 'torch==2.13.0' 'torchvision==0.28.0'
+```
+
+The 0D assimilation step is a direct observation of `[ln Rh, ln Rv]` at the
+drill bit and has no compiled Fortran dependency. Select `0D` and `1D` in the
+geosteering page to assimilate direct point data first and the directional
+response second; updates always run in that order. Selecting only `1D` retains
+the original directional workflow.
+
 ## Notes on PET
 In earlier version ta special version of PET was required. This is not the case, and PET will be packaged under #1.
 

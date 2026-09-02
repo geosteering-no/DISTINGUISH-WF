@@ -20,6 +20,7 @@ from udar_proxi.utils import convert_bfield_to_udar_torch
 from NeuralSim import image_to_log as _image_to_log
 from NeuralSim import vector_to_log as _vector_to_log
 from GeoSim import sim as _geosim_sim
+from wf_demo.pixel_model import run_forward_model
 
 smooth_proxi_input_shape = (4, 128)
 smooth_proxi_output_shape = (6, 10)
@@ -80,6 +81,15 @@ def _smooth_full_model_forward(self, x, index_vector, output_transien_results=Fa
 
 _vector_to_log.FullModel.forward = _smooth_full_model_forward
 
+def _smooth_forward_from_facies(self, facies, index_vector):
+    resistivity_padded = self.convert_to_resistivity_format(facies, index_vector)
+    response = self.em_model.image_to_log(resistivity_padded)
+    if response.shape[-1] == 10:
+        response = convert_bfield_to_udar_torch(response)
+    return response
+
+_vector_to_log.FullModel.forward_from_facies = _smooth_forward_from_facies
+
 def _smooth_call_sim(self, **kwargs):
     my_latent_vec_np = kwargs['x']
 
@@ -92,7 +102,12 @@ def _smooth_call_sim(self, **kwargs):
                                    fill_value=self.bit_pos[0][0],
                                    dtype=torch.long).to(_geosim_sim.device)
 
-    logs = self.NNmodel.forward(my_latent_tensor, self.index_vector, output_transien_results=False)
+    logs = run_forward_model(
+        self.NNmodel,
+        my_latent_tensor,
+        self.index_vector,
+        getattr(self, 'earth_model_type', 'gan'),
+    )
 
     logs_np = logs.cpu().detach().numpy()
     batch_size = logs_np.shape[0]
@@ -125,7 +140,9 @@ CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 def download(url: str, dst: Path):
     if not dst.exists():
+        print(f"Downloading weights: {url}")
         urlretrieve(url, dst)
+        print(f"Saved to {dst}")
 
 # 1) Full EM checkpoint
 local_full_em_model_file_name = CACHE_DIR / "checkpoint_done.pth"
@@ -169,7 +186,6 @@ input_dict = {
     'reportpoint': [int(el) for el in range(1)],
     'scalers_folder':scalers_folder,
     'bit_pos':[(32,0)],
-    # 'datatype': ['point'],
     'datatype': udar_data_type_array,
     'parallel_internal': True,
     'parallel':250

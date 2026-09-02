@@ -1,103 +1,123 @@
+import csv
+import pickle
+from pathlib import Path
+
 from GeoSim.sim import GeoSim
 import numpy as np
-import csv
-import torch
 import pandas as pd
-import pickle
+import torch
 
+from wf_demo.default_load import input_dict
+from wf_demo.measurements import POINT_DATA_TYPE
+from wf_demo.zero_d import point_log_resistivity
 
-from wf_demo.default_load import input_dict, load_default_latent_tensor
 
 class SyntheticTruth:
     def __init__(self, latent_truth_vector, device=None):
-        if device is None:
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        else:
-            self.device = device
-
-        # todo make this simulator with less stuff included
-        # this is simulator of the true data
+        self.device = device or torch.device(
+            "cuda" if torch.cuda.is_available() else "cpu"
+        )
         self.simulator = GeoSim(input_dict)
-
         self.simulator.l_prim = [0]
-        self.simulator.all_data_types = input_dict['datatype']
-
+        self.simulator.all_data_types = input_dict["datatype"]
+        self.one_d_data_types = list(input_dict["datatype"])
+        self.all_data_types = [POINT_DATA_TYPE] + [
+            data_type
+            for data_type in self.one_d_data_types
+            if data_type != POINT_DATA_TYPE
+        ]
         self.latent_synthetic_truth = latent_truth_vector
-        # load_default_latent_tensor().to(device))
+        self.activate_data_types(self.all_data_types)
+        self._write_assimilation_indices()
 
-        # intialize
-        l = open('../data/datatyp.csv', 'w', newline='')
-        writer5 = csv.writer(l)
-        writer5.writerow([str(el) for el in self.simulator.all_data_types])
-        l.close()
+    @staticmethod
+    def _write_assimilation_indices():
+        with open("../data/assim_index.csv", "w", newline="") as handle:
+            handle.write("0\n")
 
-        k = open('../data/assim_index.csv', 'w', newline='')
-        for c, _ in enumerate([0]):
-            k.writelines(str(c) + '\n')
-        k.close()
+    @staticmethod
+    def activate_data_types(data_types):
+        """Select the columns PET should consume from the combined data files."""
+        with open("../data/datatyp.csv", "w", newline="") as handle:
+            csv.writer(handle).writerow([str(value) for value in data_types])
+
+    @staticmethod
+    def pet_input_files(data_types, output_dir="SaveOutputs"):
+        """Write stage-specific pickles because PET otherwise loads all columns.
+
+        PET's pickle reader replaces its configured datatype list with every
+        DataFrame column. Filtering the files is therefore required when the
+        0D point and 1D directional observations coexist in the source files.
+        """
+        selected = list(data_types)
+        observations = pd.read_pickle("../data/data.pkl")
+        variances = pd.read_pickle("../data/var.pkl")
+        missing = [
+            data_type
+            for data_type in selected
+            if data_type not in observations.columns
+            or data_type not in variances.columns
+        ]
+        if missing:
+            raise KeyError(f"Missing PET observations or variances for {missing}")
+        output = Path(output_dir)
+        output.mkdir(parents=True, exist_ok=True)
+        stage = "point" if selected == [POINT_DATA_TYPE] else "one_d"
+        data_path = output / f"{stage}_data.pkl"
+        variance_path = output / f"{stage}_var.pkl"
+        observations[selected].to_pickle(data_path)
+        variances[selected].to_pickle(variance_path)
+        return str(data_path), str(variance_path)
 
     def acquire_data(self, keys):
-        # todo fix empty index vector
-        # this is the old index vector size:
-        print(f"size=(1, keys['bit_pos'][0][1]) {(1, keys['bit_pos'][0][1])}")
-        print(f"fill_value=keys['bit_pos'][0][0] {keys['bit_pos'][0][0]}")
-        # the size of the index vector per our convention should cover up to bit_pos [1]
-        # this means that it should be position plus one
-        # todo we need to update the convension in the simulator
-        index_vector = torch.full(size=(1, keys['bit_pos'][0][1]+1),
-                                  fill_value=keys['bit_pos'][0][0],
-                                  dtype=torch.long
-                                  ).to(self.device)
+        position = keys["bit_pos"][0]
+        index_vector = torch.full(
+            size=(1, position[1] + 1),
+            fill_value=position[0],
+            dtype=torch.long,
+            device=self.device,
+        )
+        logs = self.simulator.NNmodel.forward(
+            self.latent_synthetic_truth,
+            index_vector,
+            output_transien_results=False,
+        )
 
-        logs = self.simulator.NNmodel.forward(self.latent_synthetic_truth, index_vector, output_transien_results=False)
+        true_facies = self.simulator.NNmodel.eval_gan(
+            self.latent_synthetic_truth
+        )
+        point = (
+            point_log_resistivity(true_facies, position)[0]
+            .detach()
+            .cpu()
+            .numpy()
+        )
+        data = {POINT_DATA_TYPE: [point]}
+        variance = {
+            POINT_DATA_TYPE: [
+                ["ABS", [(0.001 * abs(value)) ** 2 for value in point]]
+            ]
+        }
 
-        # here we need to use the bit_pos (but was bit_pos-1)
-        if self.simulator.all_data_types == ['point']:
-            logs_np = logs.cpu().detach().numpy()[0,keys['bit_pos'][0][1],:]
-        else:
-            logs_np = logs.cpu().detach().numpy()[0,keys['bit_pos'][0][1],:,:]
-        # todo describe which logs are used in the paper
+        if self.one_d_data_types != [POINT_DATA_TYPE]:
+            logs_at_bit = logs.detach().cpu().numpy()[0, position[1], :, :]
+            for index, data_type in enumerate(self.one_d_data_types):
+                values = logs_at_bit[index, :]
+                data[data_type] = [values]
+                scale = 0.1 * np.max(np.abs(values))
+                variance[data_type] = [["ABS", [scale**2 for _ in values]]]
 
-        # bookkeeping
-        k = open('../data/assim_index.csv', 'w', newline='')
-        # writer4 = csv.writer(k)
-        l = open('../data/datatyp.csv', 'w', newline='')
-        writer5 = csv.writer(l)
+        data_frame = pd.DataFrame(data, columns=self.all_data_types, index=[0])
+        data_frame.index.name = "tvd"
+        data_frame.to_pickle("../data/data.pkl")
 
-        # build a pandas dataframe with the data.
-        # The tvd is the index and the tuple (freq,dist) is the columns
+        variance_frame = pd.DataFrame(
+            variance, columns=self.all_data_types, index=[0]
+        )
+        variance_frame.index.name = "tvd"
+        variance_frame.to_csv("../data/var.csv", index=True)
+        with open("../data/var.pkl", "wb") as handle:
+            pickle.dump(variance_frame, handle)
 
-        data = {}
-        var = {}
-        for count, di in enumerate(self.simulator.all_data_types):
-            if self.simulator.all_data_types == ['point']:
-                data[di] = [logs_np]
-                var[di] = [['ABS', [(0.001*np.mean(val))**2 for val in logs_np]]]
-            else:
-                freq, dist = di
-                data[(freq, dist)] = [logs_np[count, :]]
-                # var[(freq, dist)] = [[['REL', 10] if abs(el) > abs(0.1*np.mean(values)) else ['ABS', (0.1*np.mean(values))**2] for el in val] for val in values]
-                var[(freq, dist)] = [['ABS' ,[(0.1 * np.max(np.abs(val))) ** 2 for val in logs_np[count, :]]]]
-                # var[(freq, dist)] = [[['REL', 0.1] for val in logs_np[count, :]]]
-
-        df = pd.DataFrame(data, columns=self.simulator.all_data_types, index=[0])
-        df.index.name = 'tvd'
-        # df.to_csv('data.csv',index=True)
-        df.to_pickle('../data/data.pkl')
-
-        df = pd.DataFrame(var, columns=self.simulator.all_data_types, index=[0])
-        df.index.name = 'tvd'
-        df.to_csv('../data/var.csv', index=True)
-        with open('../data/var.pkl', 'wb') as f:
-            pickle.dump(df, f)
-
-        # filt = [i*10 for i in range(50)]
-        for c, _ in enumerate([0]):
-            # if c in filt:
-            k.writelines(str(c) + '\n')
-        k.close()
-
-        writer5.writerow([str(el) for el in self.simulator.all_data_types])
-        l.close()
-
-
+        self._write_assimilation_indices()
+        self.activate_data_types(self.all_data_types)
