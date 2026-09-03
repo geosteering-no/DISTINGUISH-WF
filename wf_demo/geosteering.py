@@ -1,4 +1,5 @@
 import os
+import fcntl
 os.environ["MPLBACKEND"] = "Agg"  # must be before importing matplotlib
 
 import matplotlib
@@ -37,6 +38,7 @@ import time
 from wf_demo.default_load import input_dict, load_default_latent_tensor, load_default_starting_ensemble_state, udar_data_type_array
 from wf_demo.assimilation_mode import ordered_assimilation_steps, run_assimilation_sequence
 from wf_demo.localization import configure_autoadaloc
+from wf_demo.measurements import POINT_DATA_TYPE, UDAR_COMPONENTS
 from wf_demo.laplace_assimilation import (
     AnalyticPixelPrior,
     assimilate_laplace,
@@ -51,6 +53,8 @@ from wf_demo.panels import (
     data_history_figure,
     data_type_label,
     discrete_value_scale,
+    missing_record_columns,
+    record_is_finite,
     records_from_files,
     resistivity_section_figure,
     split_data_type,
@@ -234,18 +238,22 @@ def get_earth(state, input_dict, model_type):
 
     return facies_ensemble
 
-def da(state, input_dict, start_position, localization_enabled, localization_strength,
-       assimilation_steps, assimilation_method, laplace_max_iterations,
-       occam_max_iterations, occam_target_value):
+def _da_unlocked(state, input_dict, start_position, localization_enabled,
+                 localization_strength, assimilation_steps, assimilation_method,
+                 laplace_max_iterations, occam_max_iterations, occam_target_value):
     keys_filter = input_dict.copy()
     keys_filter['bit_pos'] = [start_position]
 
     # One acquisition writes direct point data for 0D and directional data for 1D.
-    true_sim.acquire_data({'bit_pos': [start_position],
-                           'vec_size': 60,
-                           'reporttype': 'pos',
-                           'reportpoint': [0],
-                           'datatype': input_dict['datatype']})
+    try:
+        true_sim.acquire_data({'bit_pos': [start_position],
+                               'vec_size': 60,
+                               'reporttype': 'pos',
+                               'reportpoint': [0],
+                               'datatype': input_dict['datatype']})
+    except Exception as exc:
+        record_da_failure(start_position, exc)
+        return None
 
     def assimilate(current_state, simulator_name):
         if simulator_name == '0D':
@@ -275,7 +283,7 @@ def da(state, input_dict, start_position, localization_enabled, localization_str
                     max_iterations=laplace_max_iterations,
                 )
                 st.session_state['laplace_reduction'] = reduction
-                record_data_history(start_position)
+                record_data_history(start_position, sim_ensemble.all_data_types)
                 return posterior
             st.session_state.pop('laplace_reduction', None)
             posterior = assimilate_occam(
@@ -289,7 +297,7 @@ def da(state, input_dict, start_position, localization_enabled, localization_str
                 max_iterations=occam_max_iterations,
                 target_value=occam_target_value,
             )
-            record_data_history(start_position)
+            record_data_history(start_position, sim_ensemble.all_data_types)
             return posterior
 
         st.session_state.pop('laplace_reduction', None)
@@ -328,26 +336,77 @@ def da(state, input_dict, start_position, localization_enabled, localization_str
                 posterior_prediction,
                 sim_ensemble.all_data_types,
             )
-        record_data_history(start_position)
+        record_data_history(start_position, sim_ensemble.all_data_types)
         return posterior
 
-    return run_assimilation_sequence(state, assimilation_steps, assimilate)
+    try:
+        return run_assimilation_sequence(state, assimilation_steps, assimilate)
+    except Exception as exc:
+        record_da_failure(start_position, exc)
+        return None
 
-def record_data_history(position):
+
+def da(state, input_dict, start_position, localization_enabled, localization_strength,
+       assimilation_steps, assimilation_method, laplace_max_iterations,
+       occam_max_iterations, occam_target_value):
+    # Observations and PET outputs use shared filenames. Serialize the complete
+    # acquire/assimilate/record transaction across Streamlit sessions/processes.
+    with open('../data/.geosteering-da.lock', 'a') as lock_file:
+        fcntl.flock(lock_file, fcntl.LOCK_EX)
+        return _da_unlocked(
+            state, input_dict, start_position, localization_enabled,
+            localization_strength, assimilation_steps, assimilation_method,
+            laplace_max_iterations, occam_max_iterations, occam_target_value,
+        )
+
+
+def record_da_failure(position, error):
+    failures = st.session_state.setdefault('da_failures', [])
+    message = error if isinstance(error, str) else f"{error.__class__.__name__}: {error}"
+    failures.append({'col': int(position[1]), 'error': message})
+
+
+def record_data_history(position, expected_data_types):
+    errors = []
     records = records_from_files(
         position,
         '../data/data.pkl',
         '../data/var.pkl',
         'SaveOutputs/posterior_forecast.npz',
+        errors=errors,
     )
-    history = st.session_state.setdefault('data_history', [])
-    for record in records:
-        identity = (record['col'], record['data_type'])
-        if all(
-            (entry['col'], entry.get('data_type')) != identity
-            for entry in history
-        ):
-            history.append(record)
+    expected_types = set()
+    for data_type in expected_data_types:
+        if data_type == POINT_DATA_TYPE:
+            expected_types.add(data_type)
+        else:
+            expected_types.update(
+                (data_type, component) for component in UDAR_COMPONENTS
+            )
+    records = [
+        record for record in records
+        if record['data_type'] in expected_types
+    ]
+    history = list(st.session_state.get('data_history', []))
+    incoming_identities = {
+        (record['col'], record['data_type']) for record in records
+    }
+    history = [
+        entry for entry in history
+        if (entry['col'], entry.get('data_type')) not in incoming_identities
+    ]
+    history.extend(records)
+    st.session_state['data_history'] = history
+    actual_types = {record['data_type'] for record in records}
+    missing_count = len(expected_types.difference(actual_types))
+    if errors or missing_count:
+        record_da_failure(
+            position,
+            errors[0] if errors else (
+                f"forecast contained {len(actual_types)} of "
+                f"{len(expected_types)} expected comparison records"
+            ),
+        )
 
 facies_ensemble_torch = get_earth(state, ensemble_input_dict, earth_model_type)
 values_ensemble_torch = evaluate_earth_model_ensemble(facies_ensemble_torch, compute_geobody_sizes=True)
@@ -666,6 +725,8 @@ cur_location = st.session_state['path'][-1]
 
 # Match columns across both rows so data/map x-axes and section/map y-axes align.
 history = st.session_state.get('data_history', [])
+failures = st.session_state.get('da_failures', [])
+failed_cols = sorted({failure['col'] for failure in failures})
 available_data_types = list(dict.fromkeys(
     record.get('data_type', data_label) for record in history
 ))
@@ -716,12 +777,30 @@ with col_selector:
     else:
         st.caption("Data-match controls appear after the first assimilation step.")
         selected_data_types = []
+nonfinite_cols = sorted({
+    record['col']
+    for record in history
+    if record.get('data_type', data_label) in selected_data_types
+    and not record_is_finite(record)
+})
+drilled_cols = {
+    int(position[1])
+    for position in st.session_state.get('path', [])
+    if int(position[1]) > 0
+}
+missing_cols = missing_record_columns(
+    history, drilled_cols, selected_data_types, data_label
+)
+comparison_failed_cols = sorted(
+    set(failed_cols).union(nonfinite_cols, missing_cols)
+)
 with col_data:
     st.plotly_chart(
         data_history_figure(
             history,
             y_label=data_label,
             selected_types=selected_data_types,
+            failed_cols=comparison_failed_cols,
         ),
         use_container_width=True,
     )
@@ -738,6 +817,15 @@ with col_map:
                     scale=4
                     )
     print(f"output_{int(cur_location[1])}_{int(cur_location[0])}{flags_string} saved!")
+
+if comparison_failed_cols:
+    last_error = f" Last error: {failures[-1]['error']}" if failures else ""
+    st.warning(
+        "Data comparison unavailable at column(s) "
+        f"{', '.join(str(col) for col in comparison_failed_cols)} because data "
+        "or predictions are missing or non-finite (red lines in the data-match plot)."
+        f"{last_error}"
+    )
 
 
 selected_assimilation_steps = st.pills(
@@ -762,11 +850,9 @@ if not assimilation_steps:
     st.error("Select at least one data-assimilation simulator.")
 
 
-def drill_like_human(state):
-    next_position = apply_user_input(0)
-    st.session_state.start_position_state = next_position
+def drill_to_position(state, next_position):
     print(f"Shape of state for DA {state.shape}")
-    state = da(
+    updated_state = da(
         state,
         ensemble_input_dict,
         next_position,
@@ -778,64 +864,46 @@ def drill_like_human(state):
         occam_max_iterations,
         occam_target_value,
     )
-    st.session_state.ensemble_state = state
+    if updated_state is None:
+        return None
+    st.session_state.update({
+        'ensemble_state': updated_state,
+        'start_position_state': next_position,
+    })
     return next_position
 
 
+def drill_like_human(state):
+    return drill_to_position(state, apply_user_input(0))
+
+
 def drill_like_optimist_robot(state, next_optimal_o):
-    st.session_state.start_position_state = next_optimal_o
-    print(f"Shape of state for DA {state.shape}")
-    state = da(
-        state,
-        ensemble_input_dict,
-        next_optimal_o,
-        st.session_state.get('localization_enabled', False),
-        st.session_state.get('localization_strength', 0.9),
-        assimilation_steps,
-        assimilation_method,
-        laplace_max_iterations,
-        occam_max_iterations,
-        occam_target_value,
-    )
-    st.session_state.ensemble_state = state
-    return next_optimal_o
+    return drill_to_position(state, next_optimal_o)
 
 
 def drill_like_pessimist_robot(state, next_optimal_p):
-    st.session_state.start_position_state = next_optimal_p
-    print(f"Shape of state for DA {state.shape}")
-    state = da(
-        state,
-        ensemble_input_dict,
-        next_optimal_p,
-        st.session_state.get('localization_enabled', False),
-        st.session_state.get('localization_strength', 0.9),
-        assimilation_steps,
-        assimilation_method,
-        laplace_max_iterations,
-        occam_max_iterations,
-        occam_target_value,
-    )
-    st.session_state.ensemble_state = state
-    return next_optimal_p
+    return drill_to_position(state, next_optimal_p)
 
 
 col1, col2, col3 = st.columns(3)
 with col1:
     if st.button('Drill like a Human', disabled=assimilation_disabled):
-        drill_like_human(state)
+        if drill_like_human(state) is None:
+            st.rerun()
         toggle_first_step_and_rerun()
 with col2:
     if st.button('Drill like Optimistic Robot', disabled=assimilation_disabled):
         if next_optimal_o is None:
             next_optimal_o, _ = compute_and_apply_robot_suggestion(pessimistic=False)
-        drill_like_optimist_robot(state, next_optimal_o)
+        if drill_like_optimist_robot(state, next_optimal_o) is None:
+            st.rerun()
         toggle_first_step_and_rerun()
 with col3:
     if st.button('Drill like Pessimistic Robot', disabled=assimilation_disabled):
         if next_optimal_p is None:
             next_optimal_p, _ = compute_and_apply_robot_suggestion(pessimistic=True)
-        drill_like_pessimist_robot(state, next_optimal_p)
+        if drill_like_pessimist_robot(state, next_optimal_p) is None:
+            st.rerun()
         toggle_first_step_and_rerun()
 
 
@@ -866,7 +934,9 @@ with auto_col1:
         if should_stop_autopilot(start_position, next_optimal_o):
             pass
         else:
-            drill_like_optimist_robot(state, next_optimal_o)
+            if drill_like_optimist_robot(state, next_optimal_o) is None:
+                st.session_state.auto_opt = False
+                st.rerun()
             toggle_first_step_and_rerun()
 with auto_col2:
     auto_pes = st.checkbox(
@@ -881,5 +951,7 @@ with auto_col2:
             pass
             # st.session_state.auto_pes_ = False
         else:
-            drill_like_pessimist_robot(state, next_optimal_p)
+            if drill_like_pessimist_robot(state, next_optimal_p) is None:
+                st.session_state.auto_pes = False
+                st.rerun()
             toggle_first_step_and_rerun()

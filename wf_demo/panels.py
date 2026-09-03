@@ -20,6 +20,25 @@ DATA_COLORS = (
     "#FACC15",
     "#2DD4BF",
 )
+RECORD_VALUE_FIELDS = ("obs", "std", "p10", "p50", "p90")
+
+
+def record_is_finite(record):
+    """Whether one history record can be rendered by Plotly."""
+    return all(np.isfinite(record.get(field, np.nan)) for field in RECORD_VALUE_FIELDS)
+
+
+def missing_record_columns(records, expected_cols, selected_types, y_label):
+    """Drilled columns lacking at least one selected comparison record."""
+    identities = {
+        (record["col"], record.get("data_type", y_label))
+        for record in records
+    }
+    return sorted(
+        col
+        for col in set(expected_cols)
+        if any((col, data_type) not in identities for data_type in selected_types)
+    )
 
 
 def data_type_label(data_type):
@@ -211,8 +230,13 @@ def new_record(position, obs_cell, var_cell, preds_matrix, index=GEOSIGNAL_INDEX
     }
 
 
-def records_from_files(position, data_pkl, var_pkl, forecast_npz):
-    """One history record per (tool configuration, data type) at a position."""
+def records_from_files(position, data_pkl, var_pkl, forecast_npz, errors=None):
+    """One history record per (tool configuration, data type) at a position.
+
+    Read problems are appended to `errors` (when given) instead of being
+    raised, so a failed step surfaces as missing data rather than a crash.
+    """
+    errors = [] if errors is None else errors
     try:
         data_df = pd.read_pickle(data_pkl)
         var_df = pd.read_pickle(var_pkl)
@@ -235,7 +259,8 @@ def records_from_files(position, data_pkl, var_pkl, forecast_npz):
                 record["data_type"] = (key, component) if component else key
                 records.append(record)
         return records
-    except (FileNotFoundError, KeyError, IndexError, ValueError):
+    except Exception as exc:
+        errors.append(f"{exc.__class__.__name__}: {exc}")
         return []
 
 
@@ -245,7 +270,7 @@ def record_from_files(position, data_pkl, var_pkl, forecast_npz):
     return records[0] if records else None
 
 
-def data_history_figure(records, y_label, selected_types=None):
+def data_history_figure(records, y_label, selected_types=None, failed_cols=None):
     """Data and posterior predictions for one or more selected datatypes."""
     fig = go.Figure()
     if records:
@@ -335,6 +360,25 @@ def data_history_figure(records, y_label, selected_types=None):
         fig.add_annotation(
             text="Data and posterior predictions appear after the first assimilation step",
             showarrow=False, x=0.5, y=0.5, xref="paper", yref="paper",
+        )
+    marked_cols = set(failed_cols or ())
+    if records:
+        marked_cols.update(
+            record["col"]
+            for record in records
+            if record.get("data_type", y_label) in shown
+            and not record_is_finite(record)
+        )
+    if marked_cols:
+        for col in sorted(marked_cols):
+            fig.add_vline(
+                x=float(col),
+                line=dict(color="red", width=2, dash="dash"),
+            )
+        fig.add_scatter(
+            x=[None], y=[None], mode="lines",
+            line=dict(color="red", width=2, dash="dash"),
+            name="Failed step (no data)",
         )
     fig.update_xaxes(title_text="VS [column]", range=[-0.5, GRID_SIZE - 0.5])
     fig.update_layout(

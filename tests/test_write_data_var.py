@@ -57,6 +57,25 @@ def test_synthetic_truth_writes_distinct_point_and_directional_data(
     assert (data_dir / "datatyp.csv").read_text().strip() == POINT_DATA_TYPE
 
 
+def test_synthetic_truth_constructor_does_not_rewrite_shared_data_files(
+    monkeypatch, tmp_path
+):
+    work = tmp_path / "work"
+    data_dir = tmp_path / "data"
+    work.mkdir()
+    data_dir.mkdir()
+    monkeypatch.chdir(work)
+    monkeypatch.setattr(
+        "wf_demo.write_data_var.GeoSim",
+        lambda _: SimpleNamespace(l_prim=None, all_data_types=None),
+    )
+
+    SyntheticTruth(torch.zeros((1, 60)), device=torch.device("cpu"))
+
+    assert not (data_dir / "datatyp.csv").exists()
+    assert not (data_dir / "assim_index.csv").exists()
+
+
 def test_pet_stage_files_contain_only_the_selected_simulator_data(
     monkeypatch, tmp_path
 ):

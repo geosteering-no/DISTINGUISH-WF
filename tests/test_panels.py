@@ -8,8 +8,10 @@ from wf_demo.panels import (
     combine_selected_data_types,
     data_history_figure,
     discrete_value_scale,
+    missing_record_columns,
     new_record,
     parse_var_cell,
+    record_is_finite,
     record_from_files,
     records_from_files,
     resistivity_section_figure,
@@ -100,6 +102,25 @@ def test_new_record_summarizes_one_geosignal():
     assert record["p10"] <= record["p50"] <= record["p90"]
 
 
+def test_new_record_exposes_nonfinite_prediction():
+    preds = np.ones((8, 10))
+    preds[6, 4] = np.nan
+
+    record = new_record(
+        position=(30, 11),
+        obs_cell=np.arange(8, dtype=float),
+        var_cell=["ABS", [0.01] * 8],
+        preds_matrix=preds,
+        index=6,
+    )
+
+    assert record["col"] == 11
+    assert np.isnan(record["p10"])
+    assert np.isnan(record["p50"])
+    assert np.isnan(record["p90"])
+    assert not record_is_finite(record)
+
+
 def test_record_from_files_reads_pet_outputs(tmp_path):
     key = ("6kHz", "83ft")
     pd.DataFrame({key: [np.arange(8, dtype=float)]}, index=[0]).to_pickle(
@@ -172,6 +193,39 @@ def test_data_history_figure_draws_records_or_placeholder():
     empty = data_history_figure([], y_label="UDAR")
     assert len(empty.data) == 0
     assert len(empty.layout.annotations) == 1
+
+
+def test_data_history_figure_marks_nonfinite_records_as_failed():
+    data_type = (("6kHz", "83ft"), "UHAP")
+    records = [
+        {"col": 1, "data_type": data_type, "obs": 1.0, "std": 0.1,
+         "p10": 0.8, "p50": 1.0, "p90": 1.2},
+        {"col": 2, "data_type": data_type, "obs": np.nan, "std": np.nan,
+         "p10": np.nan, "p50": np.nan, "p90": np.nan},
+    ]
+
+    assert record_is_finite(records[0])
+    assert not record_is_finite(records[1])
+
+    fig = data_history_figure(records, y_label="UDAR", selected_types=[data_type])
+
+    assert len(fig.layout.shapes) == 1
+    assert fig.layout.shapes[0].x0 == 2
+    assert fig.data[-1].name == "Failed step (no data)"
+
+
+def test_missing_record_columns_checks_every_selected_type():
+    tool = ("6kHz", "83ft")
+    usdp = (tool, "USDP")
+    uhap = (tool, "UHAP")
+    records = [
+        {"col": 1, "data_type": usdp},
+        {"col": 1, "data_type": uhap},
+        {"col": 2, "data_type": usdp},
+    ]
+
+    assert missing_record_columns(records, {1, 2}, [usdp], "UDAR") == []
+    assert missing_record_columns(records, {1, 2}, [usdp, uhap], "UDAR") == [2]
 
 
 def test_data_history_figure_draws_multiple_selected_datatypes_without_black():

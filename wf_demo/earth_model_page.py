@@ -170,7 +170,7 @@ if st.button("Use this earth model", type="primary"):
         for key in (
             "ensemble_state", "start_position_state", "path", "auto_opt",
             "auto_pes", "data_history", "data_history_tools",
-            "data_history_data_types", "laplace_reduction",
+            "data_history_data_types", "laplace_reduction", "da_failures",
         ):
             st.session_state.pop(key, None)
         st.success(f"{model_type} prior ready with {prior.shape[1]} realizations.")

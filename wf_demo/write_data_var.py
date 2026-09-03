@@ -27,8 +27,6 @@ class SyntheticTruth:
             if data_type != POINT_DATA_TYPE
         ]
         self.latent_synthetic_truth = latent_truth_vector
-        self.activate_data_types(self.all_data_types)
-        self._write_assimilation_indices()
 
     @staticmethod
     def _write_assimilation_indices():
